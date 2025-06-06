@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { UserPlus, Search, Eye, Edit, Trash2, X } from 'lucide-react';
+import { UserPlus, Search, Eye, Edit, Trash2, X, Users } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import toast from 'react-hot-toast';
 
 const mockClients = [
   { name: 'John Doe', email: 'john.doe@example.com', status: 'Active', added: 'about 1 hour ago', phone: '555-1234', notes: 'VIP client, prefers email.' },
@@ -12,6 +13,14 @@ const mockClients = [
 const emptyClient = { name: '', email: '', status: 'Active', phone: '', notes: '', added: 'just now' };
 
 const PAGE_SIZE = 10;
+
+// Add shimmer skeleton CSS
+const shimmer = `
+  @keyframes shimmer {
+    0% { background-position: -400px 0; }
+    100% { background-position: 400px 0; }
+  }
+`;
 
 export default function Clients() {
   const [loading, setLoading] = useState(true);
@@ -49,14 +58,17 @@ export default function Clients() {
     e.preventDefault();
     if (!form.name.trim() || !form.email.trim()) {
       setFormError('Name and Email are required.');
+      toast.error('Name and Email are required.');
       return;
     }
     if (editIndex !== null) {
       // Edit
       setClients(clients => clients.map((c, i) => i === editIndex ? { ...form } : c));
+      toast.success('Client updated!');
     } else {
       // Add
       setClients([{ ...form }, ...clients]);
+      toast.success('Client added!');
     }
     setShowAdd(false);
     setForm({ ...emptyClient });
@@ -81,17 +93,18 @@ export default function Clients() {
   function handleBulkDelete() {
     setClients(clients => clients.filter(c => !checked.includes(c.email)));
     setChecked([]);
+    toast.success('Selected clients deleted!');
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-2 sm:px-4 py-8">
-      <div className="flex flex-col sm:flex-row items-center justify-between mb-6 gap-4">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
+      <div className="flex flex-col sm:flex-row items-center justify-between mb-8 gap-6">
         <h1 className="text-3xl font-bold text-gray-900">Clients</h1>
-        <button className="flex items-center gap-2 px-5 py-2 rounded-full bg-indigo-600 text-white font-semibold shadow hover:bg-indigo-700 transition text-base" onClick={() => { setShowAdd(true); setEditIndex(null); setForm({ ...emptyClient }); }}>
+        <button className="flex items-center gap-2 px-6 py-2 rounded-full bg-indigo-600 text-white font-semibold shadow hover:bg-indigo-700 transition text-base" onClick={() => { setShowAdd(true); setEditIndex(null); setForm({ ...emptyClient }); }}>
           <UserPlus className="w-5 h-5" /> Add Client
         </button>
       </div>
-      <div className="flex items-center gap-2 mb-4">
+      <div className="flex flex-col sm:flex-row items-center gap-4 mb-6">
         <div className="relative w-full max-w-xs">
           <input
             className="w-full pl-10 pr-3 py-2 rounded-lg border border-gray-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none text-sm bg-white"
@@ -108,42 +121,65 @@ export default function Clients() {
         )}
       </div>
       {loading ? (
-        <div className="space-y-2">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-10 bg-gray-100 rounded animate-pulse" />
-          ))}
-        </div>
+        <>
+          <style>{shimmer}</style>
+          <div className="space-y-4">
+            {[...Array(4)].map((_, i) => (
+              <div
+                key={i}
+                className="h-12 w-full rounded-lg relative overflow-hidden bg-gray-100"
+                style={{ position: 'relative' }}
+              >
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    background: 'linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%)',
+                    backgroundSize: '400px 100%',
+                    animation: 'shimmer 1.2s infinite',
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+        </>
       ) : paginated.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12 text-gray-400">
-          <span className="text-4xl mb-2">👥</span>
-          <span>No clients found.</span>
+        <div className="flex flex-col items-center justify-center py-16 text-gray-400">
+          <Users className="w-16 h-16 text-indigo-200 mb-4" />
+          <div className="text-xl font-semibold text-gray-500 mb-2">No clients found</div>
+          <div className="text-gray-400 mb-6">Add your first client to get started.</div>
+          <button
+            className="flex items-center gap-2 px-6 py-2 rounded-full bg-indigo-600 text-white font-semibold shadow hover:bg-indigo-700 transition text-base"
+            onClick={() => { setShowAdd(true); setEditIndex(null); setForm({ ...emptyClient }); }}
+          >
+            <UserPlus className="w-5 h-5" /> Add Client
+          </button>
         </div>
       ) : (
         <motion.table initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="w-full text-sm bg-white rounded-2xl shadow-lg overflow-hidden">
           <thead>
             <tr className="text-gray-400 text-xs bg-gray-50">
-              <th className="py-3 px-4"><input type="checkbox" checked={allChecked} ref={el => { if (el) el.indeterminate = !allChecked && someChecked; }} onChange={e => handleCheckAll(e.target.checked)} /></th>
-              <th className="text-left font-normal py-3 px-4">Name</th>
-              <th className="text-left font-normal py-3 px-4">Email</th>
-              <th className="text-left font-normal py-3 px-4">Status</th>
-              <th className="text-left font-normal py-3 px-4">Added</th>
-              <th className="text-left font-normal py-3 px-4">Actions</th>
+              <th className="py-4 px-6"><input type="checkbox" checked={allChecked} ref={el => { if (el) el.indeterminate = !allChecked && someChecked; }} onChange={e => handleCheckAll(e.target.checked)} /></th>
+              <th className="text-left font-normal py-4 px-6">Name</th>
+              <th className="text-left font-normal py-4 px-6">Email</th>
+              <th className="text-left font-normal py-4 px-6">Status</th>
+              <th className="text-left font-normal py-4 px-6">Added</th>
+              <th className="text-left font-normal py-4 px-6">Actions</th>
             </tr>
           </thead>
           <tbody>
             {paginated.map((client, idx) => (
               <tr key={client.email} className="border-t border-gray-100 hover:bg-indigo-50 transition-colors">
-                <td className="py-3 px-4"><input type="checkbox" checked={checked.includes(client.email)} onChange={e => handleCheck(client.email, e.target.checked)} /></td>
-                <td className="py-3 px-4 font-medium text-gray-900">{client.name}</td>
-                <td className="py-3 px-4 text-gray-700">{client.email}</td>
-                <td className="py-3 px-4">
+                <td className="py-4 px-6"><input type="checkbox" checked={checked.includes(client.email)} onChange={e => handleCheck(client.email, e.target.checked)} /></td>
+                <td className="py-4 px-6 font-medium text-gray-900">{client.name}</td>
+                <td className="py-4 px-6 text-gray-700">{client.email}</td>
+                <td className="py-4 px-6">
                   <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${client.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>{client.status}</span>
                 </td>
-                <td className="py-3 px-4 text-gray-500">{client.added}</td>
-                <td className="py-3 px-4 flex gap-2">
+                <td className="py-4 px-6 text-gray-500">{client.added}</td>
+                <td className="py-4 px-6 flex gap-2">
                   <button className="p-1 rounded hover:bg-indigo-100 transition" title="View" onClick={() => setSelected(client)}><Eye className="w-4 h-4 text-indigo-600" /></button>
                   <button className="p-1 rounded hover:bg-indigo-100 transition" title="Edit" onClick={() => handleEdit(client, (page - 1) * PAGE_SIZE + idx)}><Edit className="w-4 h-4 text-indigo-600" /></button>
-                  <button className="p-1 rounded hover:bg-red-100 transition" title="Delete" onClick={() => setClients(clients => clients.filter(c => c.email !== client.email))}><Trash2 className="w-4 h-4 text-red-500" /></button>
+                  <button className="p-1 rounded hover:bg-red-100 transition" title="Delete" onClick={() => { setClients(clients => clients.filter(c => c.email !== client.email)); toast.success('Client deleted!'); }}><Trash2 className="w-4 h-4 text-red-500" /></button>
                 </td>
               </tr>
             ))}

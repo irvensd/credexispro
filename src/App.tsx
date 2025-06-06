@@ -5,6 +5,15 @@ import DashboardContent from './DashboardContent';
 import WhyCredexis from './WhyCredexis';
 import Clients from './Clients';
 import Disputes from './Disputes';
+import Tasks from './Tasks';
+import Payments from './Payments';
+import Documents from './Documents';
+import LetterTemplates from './LetterTemplates';
+import Marketing from './Marketing';
+import CreditTools from './CreditTools';
+import Settings from './Settings';
+import AccountSettings from './AccountSettings';
+import HelpSupport from './HelpSupport';
 
 function App() {
   const location = useLocation();
@@ -19,6 +28,15 @@ function App() {
             <Route path="/why-credexis" element={<WhyCredexis />} />
             <Route path="/clients" element={<Clients />} />
             <Route path="/disputes" element={<Disputes />} />
+            <Route path="/tasks" element={<Tasks />} />
+            <Route path="/payments" element={<Payments />} />
+            <Route path="/documents" element={<Documents />} />
+            <Route path="/letter-templates" element={<LetterTemplates />} />
+            <Route path="/marketing" element={<Marketing />} />
+            <Route path="/credit-tools" element={<CreditTools />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/account-settings" element={<AccountSettings />} />
+            <Route path="/help-support" element={<HelpSupport />} />
           </Routes>
         </main>
       </div>
