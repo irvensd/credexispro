@@ -236,23 +236,34 @@ export default function Tasks() {
             <ClipboardPlus className="w-5 h-5" /> New Task
           </button>
         </motion.div>
-        {/* Filters */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.5 }}
-          className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 mb-2"
-        >
-          <div className="relative w-full">
-            <input
-              className="w-full pl-10 pr-3 py-2 rounded-lg border border-gray-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none text-base bg-white shadow-sm placeholder-gray-400"
-              placeholder="Search tasks..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-            />
-            <Search className="absolute left-3 top-2.5 w-5 h-5 text-gray-400" />
+        {/* Top controls: search, selection count, delete button */}
+        <div className="flex flex-col gap-2 mb-6">
+          <div className="flex flex-row items-center gap-2 w-full">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+              <input
+                type="text"
+                placeholder="Search tasks..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            {checked.length > 0 && (
+              <div className="flex items-center gap-2 ml-2">
+                <span className="text-sm text-gray-600">{checked.length} selected</span>
+                <button
+                  onClick={handleBulkDelete}
+                  className="flex items-center gap-2 px-4 py-2 bg-white text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors text-sm font-medium shadow-none"
+                >
+                  <Trash2 size={20} />
+                  Delete Selected
+                </button>
+              </div>
+            )}
           </div>
-          <div className="flex flex-wrap gap-2">
+          {/* Filter buttons row */}
+          <div className="flex flex-wrap gap-2 mt-1">
             {['all', 'pending', 'in-progress', 'completed'].map(f => (
               <button
                 key={f}
@@ -263,12 +274,7 @@ export default function Tasks() {
               </button>
             ))}
           </div>
-          {someChecked && (
-            <button className="w-full sm:w-auto px-4 py-2 rounded bg-red-600 text-white font-semibold hover:bg-red-700 focus:bg-red-200 focus:outline-none focus:ring-2 focus:ring-red-400 transition" onClick={handleBulkDelete}>
-              Delete Selected
-            </button>
-          )}
-        </motion.div>
+        </div>
         {/* Main Content */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
@@ -277,99 +283,153 @@ export default function Tasks() {
           className="bg-white rounded-2xl shadow-xl p-0.5"
         >
           {view === 'list' ? (
-            loading ? (
-              <div className="space-y-4 p-6">
-                {[...Array(6)].map((_, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.1 + i * 0.07, duration: 0.4 }}
-                    className="h-12 w-full rounded-lg relative overflow-hidden bg-gray-100"
-                    style={{ position: 'relative' }}
-                  >
-                    <div
-                      className="absolute inset-0"
-                      style={{
-                        background: 'linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%)',
-                        backgroundSize: '400px 100%',
-                        animation: 'shimmer 1.2s infinite',
-                      }}
-                    />
-                  </motion.div>
-                ))}
-              </div>
-            ) : paginated.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 text-gray-400">
-                <ClipboardPlus className="w-16 h-16 text-indigo-200 mb-4" />
-                <div className="text-2xl font-semibold text-gray-500 mb-2">No tasks found</div>
-                <div className="text-gray-400 mb-6">Add your first task to get started.</div>
-                <button
-                  className="flex items-center gap-2 px-6 py-2 rounded-full bg-indigo-600 text-white font-semibold shadow hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-400 focus:outline-none transition text-base"
-                  onClick={() => { setShowAdd(true); setEditIndex(null); setForm({ ...emptyTask }); }}
-                >
-                  <LucideCalendar className="w-5 h-5" /> New Task
-                </button>
-              </div>
-            ) : (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="overflow-x-auto">
-                <motion.table className="w-full text-base bg-white rounded-2xl shadow-xl">
+                <table className="w-full">
                   <thead>
-                    <tr className="text-gray-400 text-xs bg-gray-50">
-                      <th className="py-4 px-4 font-semibold tracking-wide"><input type="checkbox" checked={allChecked} ref={el => { if (el) el.indeterminate = !allChecked && someChecked; }} onChange={e => handleCheckAll(e.target.checked)} /></th>
-                      <th className="text-left font-semibold py-4 px-4 tracking-wide">Title</th>
-                      <th className="text-left font-semibold py-4 px-4 tracking-wide hidden sm:table-cell">Type</th>
-                      <th className="text-left font-semibold py-4 px-4 tracking-wide hidden md:table-cell">Client</th>
-                      <th className="text-left font-semibold py-4 px-4 tracking-wide">Status</th>
-                      <th className="text-left font-semibold py-4 px-4 tracking-wide hidden sm:table-cell">Priority</th>
-                      <th className="text-left font-semibold py-4 px-4 tracking-wide hidden md:table-cell">Due Date</th>
-                      <th className="text-left font-semibold py-4 px-4 tracking-wide">Actions</th>
+                    <tr className="bg-gray-50 border-b border-gray-100">
+                      <th className="px-6 py-3 text-left">
+                        <input
+                          type="checkbox"
+                          checked={allChecked}
+                          onChange={(e) => handleCheckAll(e.target.checked)}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
-                  <tbody>
-                    <AnimatePresence>
-                      {paginated.map((task, idx) => (
-                        <motion.tr
-                          key={task.id}
-                          initial={{ opacity: 0, y: 12 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: 12 }}
-                          transition={{ delay: 0.05 * idx, duration: 0.4 }}
-                          className="border-t border-gray-100 hover:bg-indigo-50 transition-colors group"
-                        >
-                          <td className="py-4 px-4"><input type="checkbox" checked={checked.includes(task.id)} onChange={e => handleCheck(task.id, e.target.checked)} /></td>
-                          <td className="py-4 px-4 font-medium text-gray-900 whitespace-nowrap">
-                            <div className="flex flex-col">
-                              <span className="text-base font-semibold">{task.title}</span>
-                              <span className="text-xs text-gray-500 sm:hidden">{task.type}</span>
+                  <tbody className="divide-y divide-gray-100">
+                    {loading ? (
+                      <tr>
+                        <td colSpan={8} className="px-6 py-4">
+                          <div className="animate-pulse flex space-x-4">
+                            <div className="flex-1 space-y-4 py-1">
+                              {[...Array(5)].map((_, i) => (
+                                <div key={i} className="h-12 bg-gray-100 rounded"></div>
+                              ))}
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : paginated.length === 0 ? (
+                      <tr>
+                        <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
+                          No tasks found
+                        </td>
+                      </tr>
+                    ) : (
+                      paginated.map((task, idx) => (
+                        <tr key={task.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4">
+                            <input
+                              type="checkbox"
+                              checked={checked.includes(task.id)}
+                              onChange={(e) => handleCheck(task.id, e.target.checked)}
+                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center">
+                              <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium">
+                                {task.title.charAt(0)}
+                              </div>
+                              <div className="ml-3">
+                                <div className="font-medium text-gray-900">{task.title}</div>
+                                <div className="text-sm text-gray-500">ID: {task.id}</div>
+                              </div>
                             </div>
                           </td>
-                          <td className="py-4 px-4 text-gray-700 whitespace-nowrap hidden sm:table-cell">{task.type}</td>
-                          <td className="py-4 px-4 text-gray-700 whitespace-nowrap hidden md:table-cell">{task.client}</td>
-                          <td className="py-4 px-4 whitespace-nowrap">
-                            <div className="flex items-center gap-1">
+                          <td className="px-6 py-4">
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                              {task.type}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-900">{task.client}</td>
+                          <td className="px-6 py-4">
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              task.status === 'Completed' ? 'bg-green-100 text-green-800' :
+                              task.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
+                              task.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
                               {getStatusIcon(task.status)}
-                              <span className="text-gray-700">{task.status}</span>
+                              {task.status}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              task.priority === 'High' ? 'bg-red-100 text-red-800' :
+                              task.priority === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-green-100 text-green-800'
+                            }`}>
+                              {task.priority}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-500">{formatDate(task.dueDate)}</td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => setSelected(task)}
+                                className="p-1 text-gray-400 hover:text-gray-600"
+                              >
+                                <Eye size={20} />
+                              </button>
+                              <button
+                                onClick={() => handleEdit(task, idx)}
+                                className="p-1 text-gray-400 hover:text-gray-600"
+                              >
+                                <Edit size={20} />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setTasks(tasks.filter(t => t.id !== task.id));
+                                  toast.success('Task deleted!');
+                                }}
+                                className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                              >
+                                <Trash2 size={20} />
+                              </button>
                             </div>
                           </td>
-                          <td className="py-4 px-4 whitespace-nowrap hidden sm:table-cell">
-                            <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getPriorityColor(task.priority)} shadow-sm`}>{task.priority}</span>
-                          </td>
-                          <td className="py-4 px-4 text-gray-500 whitespace-nowrap hidden md:table-cell">{formatDate(task.dueDate)}</td>
-                          <td className="py-4 px-4 whitespace-nowrap">
-                            <div className="flex gap-2">
-                              <button className="p-2 rounded hover:bg-indigo-100 focus:bg-indigo-200 transition shadow-sm" title="View" onClick={() => setSelected(task)}><Eye className="w-5 h-5 text-indigo-600" /></button>
-                              <button className="p-2 rounded hover:bg-indigo-100 focus:bg-indigo-200 transition shadow-sm" title="Edit" onClick={() => handleEdit(task, (page - 1) * PAGE_SIZE + idx)}><Edit className="w-5 h-5 text-indigo-600" /></button>
-                              <button className="p-2 rounded hover:bg-red-100 focus:bg-red-200 transition shadow-sm" title="Delete" onClick={() => { setTasks(tasks => tasks.filter(t => t.id !== task.id)); toast.success('Task deleted!'); }}><Trash2 className="w-5 h-5 text-red-500" /></button>
-                            </div>
-                          </td>
-                        </motion.tr>
-                      ))}
-                    </AnimatePresence>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
-                </motion.table>
+                </table>
               </div>
-            )
+
+              {/* Pagination */}
+              {!loading && paginated.length > 0 && (
+                <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between">
+                  <div className="text-sm text-gray-500">
+                    Showing {((page - 1) * PAGE_SIZE) + 1} to {Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length} tasks
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setPage(p => Math.max(1, p - 1))}
+                      disabled={page === 1}
+                      className="px-3 py-1 rounded-lg border border-gray-200 text-sm disabled:opacity-50"
+                    >
+                      Previous
+                    </button>
+                    <button
+                      onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                      disabled={page === totalPages}
+                      className="px-3 py-1 rounded-lg border border-gray-200 text-sm disabled:opacity-50"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           ) : (
             <div className="h-[600px] sm:h-[700px]">
               <BigCalendar
@@ -385,31 +445,6 @@ export default function Tasks() {
                 }}
               />
             </div>
-          )}
-          {/* Pagination Controls */}
-          {view === 'list' && !loading && totalPages > 1 && (
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4, duration: 0.4 }}
-              className="flex justify-center items-center gap-2 mt-8"
-            >
-              <button
-                className="px-3 py-2 rounded bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200 focus:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition"
-                disabled={page === 1}
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-              >
-                Previous
-              </button>
-              <span className="text-base text-gray-500">Page {page} of {totalPages}</span>
-              <button
-                className="px-3 py-2 rounded bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200 focus:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition"
-                disabled={page === totalPages}
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-              >
-                Next
-              </button>
-            </motion.div>
           )}
         </motion.div>
         {/* Task Details Modal */}

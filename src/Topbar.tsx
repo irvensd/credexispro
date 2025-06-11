@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { AlertsDropdown } from './DashboardContent';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { User, Settings, LogOut, ChevronDown, Menu, X, HelpCircle, BookOpen } from 'lucide-react';
-import { useAuth } from './hooks/useAuth';
+import { useAuth } from './contexts/AuthContext';
 import { useMediaQuery } from 'react-responsive';
 
 interface TopbarProps {
@@ -33,7 +33,7 @@ export default function Topbar({ onHelpClick, onQuickStartClick }: TopbarProps) 
   const alertsRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, setUser, mockUsers } = useAuth();
   const isMobile = useMediaQuery({ maxWidth: 768 });
   const title = pageTitles[location.pathname] || 'Dashboard';
 
@@ -52,7 +52,7 @@ export default function Topbar({ onHelpClick, onQuickStartClick }: TopbarProps) 
   }, []);
 
   const handleSignOut = () => {
-    logout();
+    // TODO: Implement logout logic
     navigate('/');
     setProfileOpen(false);
   };
@@ -116,13 +116,22 @@ export default function Topbar({ onHelpClick, onQuickStartClick }: TopbarProps) 
               <AlertsDropdown open={alertsOpen} />
             </div>
 
-            {/* Theme toggle */}
-            <button
-              className="p-2 rounded-full hover:bg-indigo-50 transition-colors"
-              aria-label="Toggle theme"
-            >
-              <span role="img" aria-label="theme" className="text-xl">🌞</span>
-            </button>
+            {/* User switcher for testing */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-700">User:</span>
+              <select
+                value={user.id}
+                onChange={e => {
+                  const selected = mockUsers.find(u => u.id === e.target.value);
+                  if (selected) setUser(selected);
+                }}
+                className="px-2 py-1 rounded border border-gray-300 text-xs bg-white"
+              >
+                {mockUsers.map(u => (
+                  <option key={u.id} value={u.id}>{u.name} ({u.role})</option>
+                ))}
+              </select>
+            </div>
 
             {/* Profile dropdown */}
             <div className="relative" ref={profileRef}>

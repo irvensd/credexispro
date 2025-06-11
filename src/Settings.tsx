@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { User, Bell, Lock, CreditCard, Globe, Shield, HelpCircle, LogOut, Check, X, UserCircle, Sun, Moon, Globe2, Languages, Accessibility, Download, Trash2, Mail, MessageSquare, Smartphone, ShieldCheck, KeyRound, EyeOff, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, Navigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { useAuth } from './contexts/AuthContext';
 
 const settingsSections = [
   { id: 'profile', label: 'Profile', icon: <User className="w-5 h-5" /> },
@@ -176,12 +177,15 @@ export default function Settings() {
   const [activeSection, setActiveSection] = useState('profile');
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
   const [currentPlan, setCurrentPlan] = useState('pro'); // This would come from your backend
-  const user = {
-    name: 'Irvens Dupuy',
-    email: 'irvens@email.com',
-    avatar: '',
-    plan: 'Pro',
-  };
+  const { user, setUser, mockUsers, logout } = useAuth();
+  const navigate = useNavigate();
+  const roles = ['admin', 'manager', 'user'];
+  const [selectedUserId, setSelectedUserId] = useState(user.id);
+  const selectedUser = mockUsers.find(u => u.id === selectedUserId) || user;
+
+  if (!user) {
+    return <Navigate to="/" replace />;
+  }
 
   return (
     <div className="flex flex-col md:flex-row gap-8 p-6 max-w-[1400px] mx-auto">
@@ -191,7 +195,7 @@ export default function Settings() {
           {/* User Info */}
           <div className="flex flex-col items-center gap-2 mb-6">
             <div className="h-16 w-16 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-3xl font-bold">
-              {user.avatar ? <img src={user.avatar} alt="avatar" className="rounded-full w-16 h-16 object-cover" /> : user.name[0]}
+              {user.name[0]}
             </div>
             <div className="text-center">
               <div className="font-semibold text-gray-900">{user.name}</div>
@@ -217,7 +221,13 @@ export default function Settings() {
             ))}
           </nav>
         </div>
-        <button className="flex items-center gap-2 px-3 py-2 mt-8 text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+        <button
+          className="flex items-center gap-2 px-3 py-2 mt-8 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+          onClick={() => {
+            logout();
+            navigate('/');
+          }}
+        >
           <LogOut size={20} />
           Log Out
         </button>
@@ -236,7 +246,7 @@ export default function Settings() {
               <form className="space-y-6">
                 <div className="flex items-center gap-4">
                   <div className="h-16 w-16 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-3xl font-bold">
-                    {user.avatar ? <img src={user.avatar} alt="avatar" className="rounded-full w-16 h-16 object-cover" /> : user.name[0]}
+                    {user.name[0]}
                   </div>
                   <button type="button" className="px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors">Change Avatar</button>
                 </div>
@@ -253,6 +263,64 @@ export default function Settings() {
                   <button type="button" className="px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">Cancel</button>
                 </div>
               </form>
+              {/* Role switcher for admins - now inside Profile section */}
+              {user.role === 'admin' && (
+                <div className="mt-10 mb-4">
+                  <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 flex flex-col gap-6">
+                    <h2 className="text-xl font-bold mb-2 text-indigo-700 flex items-center gap-2">
+                      <UserCircle className="w-6 h-6 text-indigo-400" />
+                      Change User Role
+                    </h2>
+                    <div className="flex flex-col gap-4">
+                      <div className="flex flex-col sm:flex-row gap-4 items-center">
+                        <div className="flex flex-col items-center gap-2 flex-1">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Select User</label>
+                          <select
+                            value={selectedUserId}
+                            onChange={e => setSelectedUserId(e.target.value)}
+                            className="w-full px-3 py-2 rounded-lg border border-gray-200 text-base bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                          >
+                            {mockUsers.map(u => (
+                              <option key={u.id} value={u.id}>{u.name} ({u.role})</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="flex flex-col items-center gap-2 flex-1">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                          <select
+                            value={selectedUser.role}
+                            onChange={e => {
+                              if (selectedUser.id === user.id) setUser({ ...user, role: e.target.value });
+                              selectedUser.role = e.target.value;
+                            }}
+                            className="w-full px-3 py-2 rounded-lg border border-gray-200 text-base bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                          >
+                            {roles.map(role => (
+                              <option key={role} value={role}>{role.charAt(0).toUpperCase() + role.slice(1)}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4 mt-2">
+                        <div className="h-12 w-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 text-xl font-bold">
+                          {selectedUser.name[0]}
+                        </div>
+                        <div>
+                          <div className="font-semibold text-gray-900">{selectedUser.name}</div>
+                          <div className="text-sm text-gray-500">{selectedUser.email}</div>
+                        </div>
+                      </div>
+                      <button
+                        className="mt-4 w-full sm:w-auto px-6 py-2 rounded-lg bg-indigo-600 text-white font-semibold shadow hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-400 focus:outline-none transition text-base"
+                        onClick={() => toast.success('User role updated!')}
+                      >
+                        Save Changes
+                      </button>
+                    </div>
+                    <span className="text-xs text-gray-400">Admins can change roles for any user in the organization.</span>
+                  </div>
+                </div>
+              )}
             </div>
           )}
           {activeSection === 'notifications' && (

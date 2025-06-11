@@ -88,6 +88,17 @@ class NotificationService {
       icon: '💬',
     });
   }
+
+  public showFileUploadNotification(fileName: string, fileSize: string) {
+    if (this.notificationPermission === 'granted' && 'Notification' in window) {
+      new Notification('File Uploaded', {
+        body: `File "${fileName}" (${fileSize}) has been uploaded successfully`,
+        icon: '/logo.png',
+      });
+    }
+
+    toast.success(`File "${fileName}" uploaded successfully`);
+  }
 }
 
 export const notificationService = NotificationService.getInstance(); 

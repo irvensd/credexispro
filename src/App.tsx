@@ -24,6 +24,9 @@ import Settings from './Settings';
 import Invoices from './Invoices';
 import Reports from './Reports';
 import { useLocation } from 'react-router-dom';
+import AdminPanel from './AdminPanel';
+import { AuthProvider } from './contexts/AuthContext';
+import { InviteProvider } from './contexts/InviteContext';
 
 // Loading component
 const LoadingSpinner = () => (
@@ -81,29 +84,34 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
 export default function App() {
   return (
-    <OnboardingProvider>
-      <Suspense fallback={<LoadingSpinner />}>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<SignUp />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/dashboard" element={<ProtectedRoute><DashboardContent /></ProtectedRoute>} />
-          <Route path="/why-credexis" element={<ProtectedRoute><WhyCredexis /></ProtectedRoute>} />
-          <Route path="/clients" element={<ProtectedRoute><Clients /></ProtectedRoute>} />
-          <Route path="/disputes" element={<ProtectedRoute><Disputes /></ProtectedRoute>} />
-          <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
-          <Route path="/payments" element={<ProtectedRoute><Payments /></ProtectedRoute>} />
-          <Route path="/documents" element={<ProtectedRoute><Documents /></ProtectedRoute>} />
-          <Route path="/letter-templates" element={<ProtectedRoute><LetterTemplates /></ProtectedRoute>} />
-          <Route path="/marketing" element={<ProtectedRoute><Marketing /></ProtectedRoute>} />
-          <Route path="/credit-tools" element={<ProtectedRoute><CreditTools /></ProtectedRoute>} />
-          <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-          <Route path="/invoices" element={<ProtectedRoute><Invoices /></ProtectedRoute>} />
-          <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
-        </Routes>
-      </Suspense>
-    </OnboardingProvider>
+    <InviteProvider>
+      <AuthProvider>
+        <OnboardingProvider>
+          <Suspense fallback={<LoadingSpinner />}>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<SignUp />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/dashboard" element={<ProtectedRoute><DashboardContent /></ProtectedRoute>} />
+              <Route path="/why-credexis" element={<ProtectedRoute><WhyCredexis /></ProtectedRoute>} />
+              <Route path="/clients" element={<ProtectedRoute><Clients /></ProtectedRoute>} />
+              <Route path="/disputes" element={<ProtectedRoute><Disputes /></ProtectedRoute>} />
+              <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
+              <Route path="/payments" element={<ProtectedRoute><Payments /></ProtectedRoute>} />
+              <Route path="/documents" element={<ProtectedRoute><Documents /></ProtectedRoute>} />
+              <Route path="/letter-templates" element={<ProtectedRoute><LetterTemplates /></ProtectedRoute>} />
+              <Route path="/marketing" element={<ProtectedRoute><Marketing /></ProtectedRoute>} />
+              <Route path="/credit-tools" element={<ProtectedRoute><CreditTools /></ProtectedRoute>} />
+              <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+              <Route path="/invoices" element={<ProtectedRoute><Invoices /></ProtectedRoute>} />
+              <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+              <Route path="/admin" element={<AdminPanel />} />
+            </Routes>
+          </Suspense>
+        </OnboardingProvider>
+      </AuthProvider>
+    </InviteProvider>
   );
 }

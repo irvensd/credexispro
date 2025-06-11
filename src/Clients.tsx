@@ -28,6 +28,7 @@ import AddEditClientModal from './components/AddEditClientModal';
 import ClientDetailPage from './components/ClientDetailPage';
 import type { Client } from './types/Client';
 import toast from 'react-hot-toast';
+import React from 'react';
 
 
 
@@ -138,6 +139,9 @@ export default function Clients() {
     maxScore: '',
     plan: '',
   });
+  const [plan, setPlan] = useState('basic'); // For testing, default to 'basic'
+  const planOptions = ['basic', 'pro', 'enterprise'];
+  const user = { plan };
 
   const clientsPerPage = 10;
 
@@ -230,6 +234,25 @@ export default function Clients() {
 
   return (
     <div className="p-6 max-w-[1600px] mx-auto">
+      {/* Plan badge, dropdown, and client limit info */}
+      <div className="flex items-center gap-3 mb-4">
+        <span className="px-2 py-1 rounded bg-gray-200 text-xs font-semibold uppercase">{user.plan}</span>
+        <select
+          value={plan}
+          onChange={e => setPlan(e.target.value)}
+          className="px-2 py-1 rounded border border-gray-300 text-xs bg-white"
+        >
+          {planOptions.map(opt => (
+            <option key={opt} value={opt}>{opt.charAt(0).toUpperCase() + opt.slice(1)}</option>
+          ))}
+        </select>
+        {user.plan === 'basic' && <div className="text-xs text-gray-500 ml-4">Basic plan: Up to 50 clients</div>}
+        {user.plan === 'pro' && <div className="text-xs text-gray-500 ml-4">Pro plan: Up to 200 clients</div>}
+        {user.plan === 'enterprise' && <div className="text-xs text-gray-500 ml-4">Enterprise plan: Unlimited clients</div>}
+        {((user.plan === 'basic' && totalClients >= 50) || (user.plan === 'pro' && totalClients >= 200)) && (
+          <div className="text-xs text-red-500 font-semibold ml-4">You have reached your client limit for the {user.plan} plan. Upgrade to add more clients.</div>
+        )}
+      </div>
       {/* Header & Metrics */}
       <div className="mb-8">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">

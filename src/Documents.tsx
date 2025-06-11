@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { Search, Eye, Edit, Trash2, X, FileText, Download, Upload, File, FileType, FileImage, FileArchive, FolderPlus, Plus, FilePlus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
+import React from 'react';
+import { notificationService } from './services/notificationService';
 
 const mockDocuments = [
   { 
@@ -98,6 +100,15 @@ export default function Documents() {
   const [docClient, setDocClient] = useState('');
   const [docCategory, setDocCategory] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [plan, setPlan] = useState('basic'); // For testing, default to 'basic'
+  const planOptions = ['basic', 'pro', 'enterprise'];
+  const user = { plan };
+
+  // Storage usage logic
+  const getStorageLimit = (plan: string) => (plan === 'enterprise' ? 100 : 50);
+  const storageUsed = 12.3; // Mocked value in GB, replace with real data later
+  const storageLimit = getStorageLimit(plan);
+  const storagePercent = Math.min((storageUsed / storageLimit) * 100, 100);
 
   useEffect(() => {
     setTimeout(() => {
@@ -132,19 +143,27 @@ export default function Documents() {
   const handleFileUpload = async (files: FileList | null) => {
     if (!files) return;
     setUploading(true);
-    const newDocs: Document[] = Array.from(files).map((file: File) => ({
-      id: Math.random().toString(36).substr(2, 9),
-      name: file.name,
-      type: file.type.includes('pdf') ? 'PDF' : file.type.includes('image') ? 'JPG' : file.type.split('/')[1]?.toUpperCase() || 'FILE',
-      category: docCategory || 'Uncategorized',
-      client: docClient || 'Unassigned',
-      uploaded: 'just now',
-      size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
-      status: 'Pending',
-      notes: '',
-      url: URL.createObjectURL(file),
-      file
-    }));
+    const newDocs: Document[] = Array.from(files).map((file: File) => {
+      const fileSize = `${(file.size / (1024 * 1024)).toFixed(1)} MB`;
+      const doc = {
+        id: Math.random().toString(36).substr(2, 9),
+        name: file.name,
+        type: file.type.includes('pdf') ? 'PDF' : file.type.includes('image') ? 'JPG' : file.type.split('/')[1]?.toUpperCase() || 'FILE',
+        category: docCategory || 'Uncategorized',
+        client: docClient || 'Unassigned',
+        uploaded: 'just now',
+        size: fileSize,
+        status: 'Pending',
+        notes: '',
+        url: URL.createObjectURL(file),
+        file
+      };
+      
+      // Show notification for each uploaded file
+      notificationService.showFileUploadNotification(file.name, fileSize);
+      
+      return doc;
+    });
     setDocuments((prev: Document[]) => [...newDocs, ...prev]);
     setUploading(false);
     setDocClient('');
@@ -250,7 +269,6 @@ export default function Documents() {
         >
           <div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">Documents</h1>
-            <p className="text-base sm:text-lg text-gray-500 mt-1">Upload, manage, and organize all client documents</p>
           </div>
           <button
             className="flex items-center gap-2 px-6 py-2 rounded-full bg-indigo-600 text-white font-semibold shadow-md hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-400 focus:outline-none transition text-base w-full sm:w-auto"
@@ -277,6 +295,33 @@ export default function Documents() {
           </div>
           {/* Add any additional filters here if needed */}
         </motion.div>
+        {/* Plan dropdown for testing (remove in production) */}
+        <div className="flex items-center gap-3 mb-2">
+          <span className="px-2 py-1 rounded bg-gray-200 text-xs font-semibold uppercase">{plan}</span>
+          <select
+            value={plan}
+            onChange={e => setPlan(e.target.value)}
+            className="px-2 py-1 rounded border border-gray-300 text-xs bg-white"
+          >
+            {planOptions.map(opt => (
+              <option key={opt} value={opt}>{opt.charAt(0).toUpperCase() + opt.slice(1)}</option>
+            ))}
+          </select>
+          <span className="text-xs text-gray-400">(Testing only)</span>
+        </div>
+        {/* Storage usage info */}
+        <div className="mb-4">
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-gray-700 font-semibold">Storage Used:</span>
+            <span className="text-xs text-gray-600">{storageUsed} GB of {storageLimit} GB</span>
+            <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden max-w-xs">
+              <div
+                className="h-2 bg-indigo-500 rounded-full transition-all"
+                style={{ width: `${storagePercent}%` }}
+              ></div>
+            </div>
+          </div>
+        </div>
         {/* Main Content */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
@@ -537,6 +582,24 @@ export default function Documents() {
                       <label className="block text-sm font-medium text-gray-700">Notes</label>
                       <p className="mt-1 text-gray-900">{selected.notes}</p>
                     </div>
+                    {/* Versioning (Pro/Enterprise only) */}
+                    {(user.plan === 'pro' || user.plan === 'enterprise') ? (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Version History</label>
+                        <div className="mt-1 text-gray-900">(Version history UI here)</div>
+                      </div>
+                    ) : (
+                      <div className="text-xs text-gray-400">Upgrade to Pro for version history</div>
+                    )}
+                    {/* Sharing (Pro/Enterprise only) */}
+                    {(user.plan === 'pro' || user.plan === 'enterprise') ? (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Sharing</label>
+                        <div className="mt-1 text-gray-900">(Sharing UI here)</div>
+                      </div>
+                    ) : (
+                      <div className="text-xs text-gray-400">Upgrade to Pro for document sharing</div>
+                    )}
                   </div>
                 </div>
 
@@ -563,6 +626,16 @@ export default function Documents() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Templates section (example) */}
+        <div className="mt-8">
+          <h2 className="text-lg font-semibold mb-2">Templates</h2>
+          {user.plan === 'basic' ? (
+            <div>Standard Templates (upgrade for custom templates)</div>
+          ) : (
+            <div>Custom Templates (Pro/Enterprise)</div>
+          )}
+        </div>
       </motion.div>
     </AnimatePresence>
   );

@@ -8,6 +8,14 @@ import userRouter from './modules/user/routes';
 import orgRouter from './modules/org/routes';
 import auditRouter from './modules/audit/routes';
 import apikeyRouter from './modules/apikey/routes';
+import roleRouter from './modules/role/routes';
+import sessionRouter from './modules/session/routes';
+import fileRouter from './modules/file/routes';
+import notificationRouter from './modules/notification/routes';
+import clientRouter from './modules/client/routes';
+import disputeRouter from './modules/dispute/routes';
+import taskRouter from './modules/task/routes';
+import { errorHandler } from './middleware/errorHandler';
 
 dotenv.config();
 
@@ -21,6 +29,15 @@ app.use('/users', userRouter);
 app.use('/org', orgRouter);
 app.use('/audit', auditRouter);
 app.use('/apikeys', apikeyRouter);
+app.use('/rbac', roleRouter);
+app.use('/sessions', sessionRouter);
+app.use('/files', fileRouter);
+app.use('/notifications', notificationRouter);
+app.use('/clients', clientRouter);
+app.use('/disputes', disputeRouter);
+app.use('/api/tasks', taskRouter);
+
+app.use(errorHandler);
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });

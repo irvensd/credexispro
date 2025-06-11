@@ -37,6 +37,22 @@ router.post('/', requireAuth, async (req: AuthRequest, res) => {
         expiresAt,
       },
     });
+
+    // Notify all admins in the org
+    const admins = await prisma.user.findMany({
+      where: { organizationId: orgId, role: { equals: 'admin' } },
+    });
+    await Promise.all(admins.map((admin: { id: string }) =>
+      prisma.notification.create({
+        data: {
+          userId: admin.id,
+          organizationId: orgId,
+          type: 'invite_sent',
+          message: `An invite was sent to ${email} for role ${role}.`,
+        },
+      })
+    ));
+
     res.json({ invite });
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });

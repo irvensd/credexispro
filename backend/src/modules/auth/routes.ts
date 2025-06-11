@@ -51,7 +51,18 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
     const token = signJwt({ userId: user.id, orgId: user.organizationId, role: user.role });
-    res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role, organizationId: user.organizationId } });
+    // Create session
+    const device = req.headers['user-agent'] || 'unknown';
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '';
+    const session = await prisma.session.create({
+      data: {
+        userId: user.id,
+        organizationId: user.organizationId,
+        device: String(device),
+        ip: String(ip),
+      },
+    });
+    res.json({ token, sessionId: session.id, user: { id: user.id, name: user.name, email: user.email, role: user.role, organizationId: user.organizationId } });
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }

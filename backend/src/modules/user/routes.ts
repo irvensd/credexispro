@@ -33,11 +33,24 @@ router.patch('/:id', requireAuth, async (req: AuthRequest, res) => {
     return res.status(400).json({ error: 'Nothing to update' });
   }
   try {
+    // Get current user info for comparison
+    const prevUser = await prisma.user.findUnique({ where: { id }, select: { role: true, organizationId: true } });
     const user = await prisma.user.update({
       where: { id },
       data: { ...(role && { role }), ...(status && { status }) },
       select: { id: true, name: true, email: true, role: true, status: true },
     });
+    // If role changed, notify the user
+    if (role && prevUser && prevUser.role !== role) {
+      await prisma.notification.create({
+        data: {
+          userId: id,
+          organizationId: prevUser.organizationId,
+          type: 'role_changed',
+          message: `Your role has been changed to ${role}.`,
+        },
+      });
+    }
     res.json({ user });
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
