@@ -1,0 +1,110 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Organization {
+  id           String   @id @default(uuid())
+  name         String
+  plan         String
+  status       String   @default("active")
+  contactEmail String?
+  address      String?
+  users        User[]
+  invites      Invite[]
+  auditLogs    AuditLog[]
+  apiKeys      ApiKey[]
+  roles        Role[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Role {
+  id             String   @id @default(uuid())
+  name           String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String
+  users          User[]
+  permissions    Permission[] @relation("RolePermissions")
+
+  @@unique([name, organizationId])
+  @@index([organizationId])
+}
+
+model Permission {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  roles       Role[]   @relation("RolePermissions")
+}
+
+model User {
+  id             String   @id @default(uuid())
+  email          String   @unique
+  name           String
+  password       String
+  status         String   @default("active")
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String
+  role           Role?    @relation(fields: [roleId], references: [id])
+  roleId         String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Invite {
+  id             String   @id @default(uuid())
+  email          String
+  role           String
+  token          String   @unique
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String
+  sentAt         DateTime @default(now())
+  status         String   @default("pending") // pending, accepted, revoked, expired
+  acceptedAt     DateTime?
+  expiresAt      DateTime?
+
+  @@index([token])
+  @@index([organizationId])
+}
+
+model AuditLog {
+  id             String   @id @default(uuid())
+  timestamp      DateTime @default(now())
+  actorId        String?
+  actorEmail     String?
+  eventType      String
+  resource       String
+  resourceId     String?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  organizationId String?
+  ip             String?
+  details        String?
+
+  @@index([organizationId])
+  @@index([eventType])
+}
+
+model ApiKey {
+  id             String   @id @default(uuid())
+  key            String   @unique
+  name           String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String
+  createdAt      DateTime @default(now())
+  lastUsed       DateTime?
+  status         String   @default("active") // active, revoked
+
+  @@index([organizationId])
+  @@index([status])
+}
