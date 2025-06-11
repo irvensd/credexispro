@@ -1,53 +1,99 @@
 import { useState, useEffect } from 'react';
-import { Search, Eye, Edit, Trash2, X, AlertCircle, CheckCircle2, Clock, FileWarning, PlusCircle } from 'lucide-react';
+import { Search, Eye, Edit, Trash2, X, AlertCircle, CheckCircle2, Clock, FileWarning, PlusCircle, Filter, ChevronDown, ChevronUp, TrendingUp, BarChart2, FileText, ChevronRight, Calendar, Users, Target, ArrowUpRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 
 const mockDisputes = [
   { 
     id: '1',
-    client: 'John Doe',
-    type: 'Credit Card',
-    creditor: 'Chase',
-    status: 'In Progress',
-    submitted: '2 days ago',
-    lastUpdated: '1 hour ago',
+    client: 'John Smith',
+    type: 'Late Payment',
+    creditor: 'Capital One Credit Card',
+    bureau: 'Experian',
+    status: 'Resolved',
+    submitted: '2024-01-06',
+    lastUpdated: '2024-01-20',
     priority: 'High',
-    notes: 'Waiting for response from creditor.'
+    notes: 'Payment was made on time but reported as late. Successfully removed after providing payment receipt.',
+    creditImpact: 25,
+    disputeReason: 'Inaccurate Information',
+    nextAction: 'Monitor credit report for removal confirmation'
   },
   { 
     id: '2',
-    client: 'Jane Smith',
-    type: 'Medical Bill',
-    creditor: 'Medical Center',
-    status: 'Completed',
-    submitted: '1 week ago',
-    lastUpdated: '2 days ago',
-    priority: 'Medium',
-    notes: 'Successfully removed from credit report.'
+    client: 'Maria Garcia',
+    type: 'Collection Account',
+    creditor: 'Medical Services Collection',
+    bureau: 'Equifax',
+    status: 'In Progress',
+    submitted: '2024-01-12',
+    lastUpdated: '2024-01-18',
+    priority: 'High',
+    notes: 'Medical debt from services never received. Dispute submitted with medical records.',
+    creditImpact: 0,
+    disputeReason: 'Not My Debt',
+    nextAction: 'Awaiting bureau response (due 2024-02-15)'
   },
   { 
     id: '3',
-    client: 'Sarah Lee',
-    type: 'Collection',
-    creditor: 'ABC Collections',
-    status: 'Pending',
-    submitted: '3 days ago',
-    lastUpdated: '3 days ago',
-    priority: 'High',
-    notes: 'Initial dispute letter sent.'
+    client: 'David Johnson',
+    type: 'Credit Utilization',
+    creditor: 'Chase Bank',
+    bureau: 'TransUnion',
+    status: 'Resolved',
+    submitted: '2024-01-10',
+    lastUpdated: '2024-01-25',
+    priority: 'Medium',
+    notes: 'Balance reported incorrectly as $2,500 instead of $500. Corrected with account statements.',
+    creditImpact: 15,
+    disputeReason: 'Inaccurate Balance',
+    nextAction: 'Completed - monitoring for score improvement'
   },
   { 
     id: '4',
-    client: 'Mike D',
-    type: 'Credit Card',
-    creditor: 'Bank of America',
-    status: 'In Progress',
-    submitted: '5 days ago',
-    lastUpdated: '1 day ago',
-    priority: 'Medium',
-    notes: 'Follow-up letter sent.'
+    client: 'Sarah Williams',
+    type: 'Identity Theft',
+    creditor: 'Unauthorized Account - Store Card',
+    bureau: 'Equifax',
+    status: 'Submitted',
+    submitted: '2024-01-14',
+    lastUpdated: '2024-01-16',
+    priority: 'High',
+    notes: 'Account opened without knowledge or consent. Police report filed.',
+    creditImpact: 0,
+    disputeReason: 'Fraudulent Account',
+    nextAction: 'Police report filed, awaiting bureau investigation'
   },
+  { 
+    id: '5',
+    client: 'John Smith',
+    type: 'Duplicate Account',
+    creditor: 'Discover Card',
+    bureau: 'Experian',
+    status: 'Draft',
+    submitted: '',
+    lastUpdated: '2024-01-15',
+    priority: 'Low',
+    notes: 'Same account listed twice with different account numbers.',
+    creditImpact: 0,
+    disputeReason: 'Duplicate Listing',
+    nextAction: 'Prepare dispute letter with account documentation'
+  },
+  { 
+    id: '6',
+    client: 'Emily Davis',
+    type: 'Inquiry Removal',
+    creditor: 'Auto Loan Inquiry',
+    bureau: 'TransUnion',
+    status: 'Rejected',
+    submitted: '2024-01-05',
+    lastUpdated: '2024-01-22',
+    priority: 'Low',
+    notes: 'Hard inquiry removal request denied. Bureau states inquiry is valid.',
+    creditImpact: 0,
+    disputeReason: 'Unauthorized Inquiry',
+    nextAction: 'Consider escalation or accept bureau decision'
+  }
 ];
 
 const emptyDispute = { 
@@ -55,17 +101,69 @@ const emptyDispute = {
   client: '',
   type: '',
   creditor: '',
-  status: 'Pending',
-  submitted: 'just now',
-  lastUpdated: 'just now',
+  bureau: 'Experian',
+  status: 'Draft',
+  submitted: '',
+  lastUpdated: new Date().toISOString().split('T')[0],
   priority: 'Medium',
-  notes: ''
+  notes: '',
+  creditImpact: 0,
+  disputeReason: '',
+  nextAction: ''
 };
 
 const PAGE_SIZE = 10;
 
 // Add shimmer skeleton CSS
 const shimmer = `\n  @keyframes shimmer {\n    0% { background-position: -400px 0; }\n    100% { background-position: 400px 0; }\n  }\n`;
+
+const disputeTemplates = [
+  {
+    id: '1',
+    name: 'Late Payment Removal',
+    description: 'Template for disputing late payments with supporting documentation',
+    bureau: 'All',
+    type: 'Late Payment',
+    successRate: 85,
+    avgImpact: 25,
+    steps: [
+      'Gather payment receipts',
+      'Write dispute letter',
+      'Submit to credit bureaus',
+      'Follow up after 30 days'
+    ]
+  },
+  {
+    id: '2',
+    name: 'Collection Account Removal',
+    description: 'Template for removing collection accounts with validation request',
+    bureau: 'All',
+    type: 'Collection',
+    successRate: 75,
+    avgImpact: 35,
+    steps: [
+      'Request debt validation',
+      'Prepare dispute letter',
+      'Submit to collection agency',
+      'Monitor credit report'
+    ]
+  },
+  {
+    id: '3',
+    name: 'Identity Theft Dispute',
+    description: 'Comprehensive template for identity theft cases',
+    bureau: 'All',
+    type: 'Identity Theft',
+    successRate: 90,
+    avgImpact: 50,
+    steps: [
+      'File police report',
+      'Submit identity theft affidavit',
+      'Notify all credit bureaus',
+      'Place fraud alerts'
+    ]
+  }
+];
 
 export default function Disputes() {
   const [loading, setLoading] = useState(true);
@@ -78,6 +176,15 @@ export default function Disputes() {
   const [editIndex, setEditIndex] = useState<number | null>(null);
   const [checked, setChecked] = useState<string[]>([]);
   const [page, setPage] = useState(1);
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState({
+    status: '',
+    bureau: '',
+    priority: '',
+    dateRange: 'all'
+  });
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [activeTab, setActiveTab] = useState('all');
 
   useEffect(() => {
     setTimeout(() => {
@@ -86,11 +193,22 @@ export default function Disputes() {
     }, 1200);
   }, []);
 
-  const filtered = disputes.filter(d =>
-    d.client.toLowerCase().includes(search.toLowerCase()) ||
-    d.creditor.toLowerCase().includes(search.toLowerCase()) ||
-    d.type.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = disputes.filter(d => {
+    const matchesSearch = 
+      d.client.toLowerCase().includes(search.toLowerCase()) ||
+      d.creditor.toLowerCase().includes(search.toLowerCase()) ||
+      d.type.toLowerCase().includes(search.toLowerCase());
+    
+    const matchesFilters = 
+      (!filters.status || d.status === filters.status) &&
+      (!filters.bureau || d.bureau === filters.bureau) &&
+      (!filters.priority || d.priority === filters.priority) &&
+      (filters.dateRange === 'all' || 
+        (filters.dateRange === 'week' && new Date(d.lastUpdated) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)) ||
+        (filters.dateRange === 'month' && new Date(d.lastUpdated) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)));
+
+    return matchesSearch && matchesFilters;
+  });
 
   // Pagination
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
@@ -107,13 +225,22 @@ export default function Disputes() {
       toast.error('Client, Creditor, and Type are required.');
       return;
     }
+    
+    const currentDate = new Date().toISOString().split('T')[0];
+    const disputeData = {
+      ...form,
+      id: form.id || Math.random().toString(36).substr(2, 9),
+      lastUpdated: currentDate,
+      submitted: form.status === 'Draft' ? '' : (form.submitted || currentDate)
+    };
+    
     if (editIndex !== null) {
       // Edit
-      setDisputes(disputes => disputes.map((d, i) => i === editIndex ? { ...form } : d));
+      setDisputes(disputes => disputes.map((d, i) => i === editIndex ? disputeData : d));
       toast.success('Dispute updated!');
     } else {
       // Add
-      setDisputes([{ ...form, id: Math.random().toString(36).substr(2, 9) }, ...disputes]);
+      setDisputes([disputeData, ...disputes]);
       toast.success('Dispute added!');
     }
     setShowAdd(false);
@@ -146,10 +273,14 @@ export default function Disputes() {
     switch (status) {
       case 'In Progress':
         return <Clock className="w-4 h-4 text-blue-500" />;
-      case 'Completed':
+      case 'Resolved':
         return <CheckCircle2 className="w-4 h-4 text-green-500" />;
-      case 'Pending':
-        return <AlertCircle className="w-4 h-4 text-yellow-500" />;
+      case 'Submitted':
+        return <Clock className="w-4 h-4 text-yellow-500" />;
+      case 'Draft':
+        return <FileWarning className="w-4 h-4 text-gray-500" />;
+      case 'Rejected':
+        return <AlertCircle className="w-4 h-4 text-red-500" />;
       default:
         return null;
     }
@@ -168,237 +299,730 @@ export default function Disputes() {
     }
   }
 
-  return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
-      <div className="flex flex-col sm:flex-row items-center justify-between mb-8 gap-6">
-        <h1 className="text-3xl font-bold text-gray-900">Disputes</h1>
-        <button className="flex items-center gap-2 px-6 py-2 rounded-full bg-indigo-600 text-white font-semibold shadow hover:bg-indigo-700 transition text-base" onClick={() => { setShowAdd(true); setEditIndex(null); setForm({ ...emptyDispute }); }}>
-          New Dispute
-        </button>
-      </div>
-      <div className="flex flex-col sm:flex-row items-center gap-4 mb-6">
-        <div className="relative w-full max-w-xs">
-          <input
-            className="w-full pl-10 pr-3 py-2 rounded-lg border border-gray-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none text-sm bg-white"
-            placeholder="Search disputes..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
-          <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
-        </div>
-        {someChecked && (
-          <button className="ml-2 px-4 py-2 rounded bg-red-600 text-white font-semibold hover:bg-red-700 transition" onClick={handleBulkDelete}>
-            Delete Selected
-          </button>
-        )}
-      </div>
-      {loading ? (
-        <>
-          <style>{shimmer}</style>
-          <div className="space-y-4">
-            {[...Array(4)].map((_, i) => (
-              <div
-                key={i}
-                className="h-12 w-full rounded-lg relative overflow-hidden bg-gray-100"
-                style={{ position: 'relative' }}
-              >
-                <div
-                  className="absolute inset-0"
-                  style={{
-                    background: 'linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%)',
-                    backgroundSize: '400px 100%',
-                    animation: 'shimmer 1.2s infinite',
-                  }}
-                />
-              </div>
-            ))}
-          </div>
-        </>
-      ) : paginated.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-gray-400">
-          <FileWarning className="w-16 h-16 text-indigo-200 mb-4" />
-          <div className="text-xl font-semibold text-gray-500 mb-2">No disputes found</div>
-          <div className="text-gray-400 mb-6">Add your first dispute to get started.</div>
-          <button
-            className="flex items-center gap-2 px-6 py-2 rounded-full bg-indigo-600 text-white font-semibold shadow hover:bg-indigo-700 transition text-base"
-            onClick={() => { setShowAdd(true); setEditIndex(null); setForm({ ...emptyDispute }); }}
-          >
-            <PlusCircle className="w-5 h-5" /> New Dispute
-          </button>
-        </div>
-      ) : (
-        <motion.table initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="w-full text-sm bg-white rounded-2xl shadow-lg overflow-hidden">
-          <thead>
-            <tr className="text-gray-400 text-xs bg-gray-50">
-              <th className="py-3 px-4"><input type="checkbox" checked={allChecked} ref={el => { if (el) el.indeterminate = !allChecked && someChecked; }} onChange={e => handleCheckAll(e.target.checked)} /></th>
-              <th className="text-left font-normal py-3 px-4">Client</th>
-              <th className="text-left font-normal py-3 px-4">Type</th>
-              <th className="text-left font-normal py-3 px-4">Creditor</th>
-              <th className="text-left font-normal py-3 px-4">Status</th>
-              <th className="text-left font-normal py-3 px-4">Priority</th>
-              <th className="text-left font-normal py-3 px-4">Last Updated</th>
-              <th className="text-left font-normal py-3 px-4">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {paginated.map((dispute, idx) => (
-              <tr key={dispute.id} className="border-t border-gray-100 hover:bg-indigo-50 transition-colors">
-                <td className="py-3 px-4"><input type="checkbox" checked={checked.includes(dispute.id)} onChange={e => handleCheck(dispute.id, e.target.checked)} /></td>
-                <td className="py-3 px-4 font-medium text-gray-900">{dispute.client}</td>
-                <td className="py-3 px-4 text-gray-700">{dispute.type}</td>
-                <td className="py-3 px-4 text-gray-700">{dispute.creditor}</td>
-                <td className="py-3 px-4">
-                  <div className="flex items-center gap-1">
-                    {getStatusIcon(dispute.status)}
-                    <span className="text-gray-700">{dispute.status}</span>
-                  </div>
-                </td>
-                <td className="py-3 px-4">
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getPriorityColor(dispute.priority)}`}>{dispute.priority}</span>
-                </td>
-                <td className="py-3 px-4 text-gray-500">{dispute.lastUpdated}</td>
-                <td className="py-3 px-4 flex gap-2">
-                  <button className="p-1 rounded hover:bg-indigo-100 transition" title="View" onClick={() => setSelected(dispute)}><Eye className="w-4 h-4 text-indigo-600" /></button>
-                  <button className="p-1 rounded hover:bg-indigo-100 transition" title="Edit" onClick={() => handleEdit(dispute, (page - 1) * PAGE_SIZE + idx)}><Edit className="w-4 h-4 text-indigo-600" /></button>
-                  <button className="p-1 rounded hover:bg-red-100 transition" title="Delete" onClick={() => { setDisputes(disputes => disputes.filter(d => d.id !== dispute.id)); toast.success('Dispute deleted!'); }}><Trash2 className="w-4 h-4 text-red-500" /></button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </motion.table>
-      )}
-      {/* Pagination Controls */}
-      {!loading && totalPages > 1 && (
-        <div className="flex justify-center items-center gap-2 mt-6">
-          <button
-            className="px-3 py-1 rounded bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200 transition"
-            disabled={page === 1}
-            onClick={() => setPage(p => Math.max(1, p - 1))}
-          >
-            Previous
-          </button>
-          <span className="text-sm text-gray-500">Page {page} of {totalPages}</span>
-          <button
-            className="px-3 py-1 rounded bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200 transition"
-            disabled={page === totalPages}
-            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-          >
-            Next
-          </button>
-        </div>
-      )}
-      <AnimatePresence>
-        {selected && (
-          <motion.div
-            initial={{ x: '100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '100%' }}
-            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            className="fixed top-0 right-0 h-full w-full sm:w-[400px] bg-white shadow-2xl z-50 flex flex-col"
-          >
-            <div className="flex items-center justify-between p-6 border-b">
-              <div className="font-bold text-lg text-gray-900">Dispute Details</div>
-              <button onClick={() => setSelected(null)} className="p-2 rounded hover:bg-gray-100">
-                <X className="w-5 h-5 text-gray-500" />
-              </button>
+  const stats = {
+    total: filtered.length,
+    resolved: filtered.filter(d => d.status === 'Resolved').length,
+    inProgress: filtered.filter(d => d.status === 'In Progress').length,
+    successRate: Math.round((filtered.filter(d => d.status === 'Resolved').length / filtered.length) * 100) || 0,
+    totalImpact: filtered.reduce((sum, d) => sum + d.creditImpact, 0)
+  };
+
+  const renderTimeline = (dispute: typeof mockDisputes[0]) => {
+    const timeline = [
+      { date: dispute.submitted, action: 'Dispute Submitted', status: 'completed' },
+      { date: new Date(dispute.submitted).getTime() + 7 * 24 * 60 * 60 * 1000, action: 'Bureau Acknowledgment', status: 'completed' },
+      { date: new Date(dispute.submitted).getTime() + 30 * 24 * 60 * 60 * 1000, action: 'Investigation Complete', status: dispute.status === 'Resolved' ? 'completed' : 'pending' },
+      { date: new Date(dispute.submitted).getTime() + 45 * 24 * 60 * 60 * 1000, action: 'Results Updated', status: 'pending' }
+    ];
+
+    return (
+      <div className="space-y-4">
+        {timeline.map((item, idx) => (
+          <div key={idx} className="flex items-start gap-4">
+            <div className={`w-2 h-2 rounded-full mt-2 ${
+              item.status === 'completed' ? 'bg-green-500' : 'bg-gray-300'
+            }`} />
+            <div>
+              <div className="text-sm font-medium text-gray-900">{item.action}</div>
+              <div className="text-sm text-gray-500">{new Date(item.date).toLocaleDateString()}</div>
             </div>
-            <div className="p-6 space-y-4 flex-1 overflow-y-auto">
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  return (
+    <div className="p-6 max-w-[1600px] mx-auto">
+      {/* Header Section */}
+      <div className="mb-8">
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Disputes</h1>
+            <p className="text-gray-600 mt-1">Manage and track credit dispute cases</p>
+          </div>
+          <button
+            onClick={() => setShowAdd(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <PlusCircle size={20} />
+            New Dispute
+          </button>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between">
               <div>
-                <div className="text-xs text-gray-400 mb-1">Client</div>
-                <div className="font-semibold text-gray-900">{selected.client}</div>
+                <p className="text-sm text-gray-600">Active Disputes</p>
+                <h3 className="text-2xl font-bold mt-1">{disputes.filter(d => d.status === 'In Progress').length}</h3>
+              </div>
+              <div className="p-3 bg-blue-50 rounded-lg">
+                <FileText className="text-blue-600" size={24} />
+              </div>
+            </div>
+            <div className="flex items-center gap-2 mt-4">
+              <span className="text-sm text-green-600 flex items-center gap-1">
+                <ArrowUpRight size={16} />
+                12%
+              </span>
+              <span className="text-sm text-gray-600">vs last month</span>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Success Rate</p>
+                <h3 className="text-2xl font-bold mt-1">78%</h3>
+              </div>
+              <div className="p-3 bg-green-50 rounded-lg">
+                <TrendingUp className="text-green-600" size={24} />
+              </div>
+            </div>
+            <div className="flex items-center gap-2 mt-4">
+              <span className="text-sm text-green-600 flex items-center gap-1">
+                <ArrowUpRight size={16} />
+                5%
+              </span>
+              <span className="text-sm text-gray-600">vs last month</span>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Avg. Resolution Time</p>
+                <h3 className="text-2xl font-bold mt-1">32 days</h3>
+              </div>
+              <div className="p-3 bg-purple-50 rounded-lg">
+                <Clock className="text-purple-600" size={24} />
+              </div>
+            </div>
+            <div className="flex items-center gap-2 mt-4">
+              <span className="text-sm text-red-600 flex items-center gap-1">
+                <ArrowUpRight size={16} />
+                3 days
+              </span>
+              <span className="text-sm text-gray-600">vs last month</span>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Credit Score Impact</p>
+                <h3 className="text-2xl font-bold mt-1">+45 pts</h3>
+              </div>
+              <div className="p-3 bg-orange-50 rounded-lg">
+                <Target className="text-orange-600" size={24} />
+              </div>
+            </div>
+            <div className="flex items-center gap-2 mt-4">
+              <span className="text-sm text-green-600 flex items-center gap-1">
+                <ArrowUpRight size={16} />
+                8 pts
+              </span>
+              <span className="text-sm text-gray-600">vs last month</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="flex gap-4 mb-6">
+          <button
+            onClick={() => setShowTemplates(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-white text-gray-700 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+          >
+            <FileText size={20} />
+            Use Template
+          </button>
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="flex items-center gap-2 px-4 py-2 bg-white text-gray-700 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+          >
+            <Filter size={20} />
+            Filters
+            {showFilters ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+          </button>
+        </div>
+      </div>
+
+      {/* Filters Section */}
+      <AnimatePresence>
+        {showFilters && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="bg-white rounded-xl p-4 mb-6 shadow-sm border border-gray-100 overflow-hidden"
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <select
+                  value={filters.status}
+                  onChange={(e) => setFilters(f => ({ ...f, status: e.target.value }))}
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
+                >
+                  <option value="">All Statuses</option>
+                  <option value="Draft">Draft</option>
+                  <option value="Submitted">Submitted</option>
+                  <option value="In Progress">In Progress</option>
+                  <option value="Resolved">Resolved</option>
+                  <option value="Rejected">Rejected</option>
+                </select>
               </div>
               <div>
-                <div className="text-xs text-gray-400 mb-1">Type</div>
-                <div className="text-gray-700">{selected.type}</div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Bureau</label>
+                <select
+                  value={filters.bureau}
+                  onChange={(e) => setFilters(f => ({ ...f, bureau: e.target.value }))}
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
+                >
+                  <option value="">All Bureaus</option>
+                  <option value="Experian">Experian</option>
+                  <option value="Equifax">Equifax</option>
+                  <option value="TransUnion">TransUnion</option>
+                </select>
               </div>
               <div>
-                <div className="text-xs text-gray-400 mb-1">Creditor</div>
-                <div className="text-gray-700">{selected.creditor}</div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                <select
+                  value={filters.priority}
+                  onChange={(e) => setFilters(f => ({ ...f, priority: e.target.value }))}
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
+                >
+                  <option value="">All Priorities</option>
+                  <option value="High">High</option>
+                  <option value="Medium">Medium</option>
+                  <option value="Low">Low</option>
+                </select>
               </div>
               <div>
-                <div className="text-xs text-gray-400 mb-1">Status</div>
-                <div className="flex items-center gap-1">
-                  {getStatusIcon(selected.status)}
-                  <span className="text-gray-700">{selected.status}</span>
-                </div>
-              </div>
-              <div>
-                <div className="text-xs text-gray-400 mb-1">Priority</div>
-                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getPriorityColor(selected.priority)}`}>{selected.priority}</span>
-              </div>
-              <div>
-                <div className="text-xs text-gray-400 mb-1">Submitted</div>
-                <div className="text-gray-500">{selected.submitted}</div>
-              </div>
-              <div>
-                <div className="text-xs text-gray-400 mb-1">Last Updated</div>
-                <div className="text-gray-500">{selected.lastUpdated}</div>
-              </div>
-              <div>
-                <div className="text-xs text-gray-400 mb-1">Notes</div>
-                <div className="text-gray-700">{selected.notes}</div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Date Range</label>
+                <select
+                  value={filters.dateRange}
+                  onChange={(e) => setFilters(f => ({ ...f, dateRange: e.target.value }))}
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
+                >
+                  <option value="all">All Time</option>
+                  <option value="week">Last 7 Days</option>
+                  <option value="month">Last 30 Days</option>
+                </select>
               </div>
             </div>
           </motion.div>
         )}
+      </AnimatePresence>
+
+      {/* Search and Bulk Actions */}
+      <div className="flex flex-col sm:flex-row justify-between gap-4 mb-6">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+          <input
+            type="text"
+            placeholder="Search disputes..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+        </div>
+        {checked.length > 0 && (
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-600">{checked.length} selected</span>
+            <button
+              onClick={handleBulkDelete}
+              className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
+            >
+              <Trash2 size={20} />
+              Delete Selected
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Disputes Table */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-100">
+                <th className="px-6 py-3 text-left">
+                  <input
+                    type="checkbox"
+                    checked={allChecked}
+                    onChange={(e) => handleCheckAll(e.target.checked)}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Creditor</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bureau</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Updated</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {loading ? (
+                <tr>
+                  <td colSpan={9} className="px-6 py-4">
+                    <div className="animate-pulse flex space-x-4">
+                      <div className="flex-1 space-y-4 py-1">
+                        {[...Array(5)].map((_, i) => (
+                          <div key={i} className="h-12 bg-gray-100 rounded"></div>
+                        ))}
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              ) : paginated.length === 0 ? (
+                <tr>
+                  <td colSpan={9} className="px-6 py-8 text-center text-gray-500">
+                    No disputes found
+                  </td>
+                </tr>
+              ) : (
+                paginated.map((dispute, idx) => (
+                  <tr key={dispute.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4">
+                      <input
+                        type="checkbox"
+                        checked={checked.includes(dispute.id)}
+                        onChange={(e) => handleCheck(dispute.id, e.target.checked)}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center">
+                        <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium">
+                          {dispute.client.charAt(0)}
+                        </div>
+                        <div className="ml-3">
+                          <div className="font-medium text-gray-900">{dispute.client}</div>
+                          <div className="text-sm text-gray-500">ID: {dispute.id}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        {dispute.type}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-900">{dispute.creditor}</td>
+                    <td className="px-6 py-4 text-sm text-gray-900">{dispute.bureau}</td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        dispute.status === 'Resolved' ? 'bg-green-100 text-green-800' :
+                        dispute.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
+                        dispute.status === 'Rejected' ? 'bg-red-100 text-red-800' :
+                        dispute.status === 'Submitted' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {getStatusIcon(dispute.status)}
+                        {dispute.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        dispute.priority === 'High' ? 'bg-red-100 text-red-800' :
+                        dispute.priority === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-green-100 text-green-800'
+                      }`}>
+                        {dispute.priority}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-500">{dispute.lastUpdated}</td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setSelected(dispute)}
+                          className="p-1 text-gray-400 hover:text-gray-600"
+                        >
+                          <Eye size={20} />
+                        </button>
+                        <button
+                          onClick={() => handleEdit(dispute, idx)}
+                          className="p-1 text-gray-400 hover:text-gray-600"
+                        >
+                          <Edit size={20} />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setDisputes(disputes.filter(d => d.id !== dispute.id));
+                            toast.success('Dispute deleted!');
+                          }}
+                          className="p-1 text-gray-400 hover:text-red-600"
+                        >
+                          <Trash2 size={20} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Pagination */}
+        {!loading && paginated.length > 0 && (
+          <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between">
+            <div className="text-sm text-gray-500">
+              Showing {((page - 1) * PAGE_SIZE) + 1} to {Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length} disputes
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="px-3 py-1 rounded-lg border border-gray-200 text-sm disabled:opacity-50"
+              >
+                Previous
+              </button>
+              <button
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                className="px-3 py-1 rounded-lg border border-gray-200 text-sm disabled:opacity-50"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Dispute Details Modal */}
+      <AnimatePresence>
+        {selected && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+            >
+              <div className="p-6">
+                <div className="flex justify-between items-start mb-6">
+                  <div>
+                    <h2 className="text-xl font-bold text-gray-900">Dispute Details</h2>
+                    <p className="text-gray-600 mt-1">ID: {selected.id}</p>
+                  </div>
+                  <button
+                    onClick={() => setSelected(null)}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-6 mb-6">
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500 mb-1">Client</h3>
+                    <p className="text-gray-900">{selected.client}</p>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500 mb-1">Type</h3>
+                    <p className="text-gray-900">{selected.type}</p>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500 mb-1">Creditor</h3>
+                    <p className="text-gray-900">{selected.creditor}</p>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500 mb-1">Bureau</h3>
+                    <p className="text-gray-900">{selected.bureau}</p>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500 mb-1">Status</h3>
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      selected.status === 'Resolved' ? 'bg-green-100 text-green-800' :
+                      selected.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
+                      selected.status === 'Rejected' ? 'bg-red-100 text-red-800' :
+                      selected.status === 'Submitted' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {getStatusIcon(selected.status)}
+                      {selected.status}
+                    </span>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500 mb-1">Priority</h3>
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      selected.priority === 'High' ? 'bg-red-100 text-red-800' :
+                      selected.priority === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-green-100 text-green-800'
+                    }`}>
+                      {selected.priority}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mb-6">
+                  <h3 className="text-sm font-medium text-gray-500 mb-2">Timeline</h3>
+                  <div className="space-y-4">
+                    {renderTimeline(selected)}
+                  </div>
+                </div>
+
+                <div className="mb-6">
+                  <h3 className="text-sm font-medium text-gray-500 mb-2">Notes</h3>
+                  <p className="text-gray-900">{selected.notes}</p>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500 mb-2">Next Action</h3>
+                  <p className="text-gray-900">{selected.nextAction}</p>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Add/Edit Dispute Modal */}
+      <AnimatePresence>
         {showAdd && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/30"
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
           >
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8 relative">
-              <button onClick={() => { setShowAdd(false); setEditIndex(null); setForm({ ...emptyDispute }); }} className="absolute top-4 right-4 p-2 rounded hover:bg-gray-100">
-                <X className="w-5 h-5 text-gray-500" />
-              </button>
-              <div className="font-bold text-lg text-gray-900 mb-4">{editIndex !== null ? 'Edit Dispute' : 'New Dispute'}</div>
-              <form className="space-y-4" onSubmit={handleAddDispute}>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Client *</label>
-                  <input className="w-full border rounded px-3 py-2 text-sm" value={form.client} onChange={e => setForm(f => ({ ...f, client: e.target.value }))} required />
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+            >
+              <form onSubmit={handleAddDispute} className="p-6">
+                <div className="flex justify-between items-start mb-6">
+                  <div>
+                    <h2 className="text-xl font-bold text-gray-900">
+                      {editIndex !== null ? 'Edit Dispute' : 'New Dispute'}
+                    </h2>
+                    <p className="text-gray-600 mt-1">
+                      {editIndex !== null ? 'Update dispute details' : 'Create a new dispute case'}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowAdd(false);
+                      setForm({ ...emptyDispute });
+                      setFormError('');
+                      setEditIndex(null);
+                    }}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <X size={20} />
+                  </button>
                 </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Type *</label>
-                  <select className="w-full border rounded px-3 py-2 text-sm" value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))} required>
-                    <option value="">Select Type</option>
-                    <option value="Credit Card">Credit Card</option>
-                    <option value="Medical Bill">Medical Bill</option>
-                    <option value="Collection">Collection</option>
-                    <option value="Other">Other</option>
-                  </select>
+
+                {formError && (
+                  <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-lg">
+                    {formError}
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Client</label>
+                    <input
+                      type="text"
+                      value={form.client}
+                      onChange={(e) => setForm(f => ({ ...f, client: e.target.value }))}
+                      className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Enter client name"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                    <select
+                      value={form.type}
+                      onChange={(e) => setForm(f => ({ ...f, type: e.target.value }))}
+                      className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="">Select type</option>
+                      <option value="Late Payment">Late Payment</option>
+                      <option value="Collection Account">Collection Account</option>
+                      <option value="Credit Utilization">Credit Utilization</option>
+                      <option value="Identity Theft">Identity Theft</option>
+                      <option value="Duplicate Account">Duplicate Account</option>
+                      <option value="Inquiry Removal">Inquiry Removal</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Creditor</label>
+                    <input
+                      type="text"
+                      value={form.creditor}
+                      onChange={(e) => setForm(f => ({ ...f, creditor: e.target.value }))}
+                      className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Enter creditor name"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Bureau</label>
+                    <select
+                      value={form.bureau}
+                      onChange={(e) => setForm(f => ({ ...f, bureau: e.target.value }))}
+                      className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="Experian">Experian</option>
+                      <option value="Equifax">Equifax</option>
+                      <option value="TransUnion">TransUnion</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                    <select
+                      value={form.status}
+                      onChange={(e) => setForm(f => ({ ...f, status: e.target.value }))}
+                      className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="Draft">Draft</option>
+                      <option value="Submitted">Submitted</option>
+                      <option value="In Progress">In Progress</option>
+                      <option value="Resolved">Resolved</option>
+                      <option value="Rejected">Rejected</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                    <select
+                      value={form.priority}
+                      onChange={(e) => setForm(f => ({ ...f, priority: e.target.value }))}
+                      className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="High">High</option>
+                      <option value="Medium">Medium</option>
+                      <option value="Low">Low</option>
+                    </select>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Creditor *</label>
-                  <input className="w-full border rounded px-3 py-2 text-sm" value={form.creditor} onChange={e => setForm(f => ({ ...f, creditor: e.target.value }))} required />
+
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                  <textarea
+                    value={form.notes}
+                    onChange={(e) => setForm(f => ({ ...f, notes: e.target.value }))}
+                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    rows={3}
+                    placeholder="Enter dispute notes"
+                  />
                 </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Status</label>
-                  <select className="w-full border rounded px-3 py-2 text-sm" value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))}>
-                    <option value="Pending">Pending</option>
-                    <option value="In Progress">In Progress</option>
-                    <option value="Completed">Completed</option>
-                  </select>
+
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Next Action</label>
+                  <input
+                    type="text"
+                    value={form.nextAction}
+                    onChange={(e) => setForm(f => ({ ...f, nextAction: e.target.value }))}
+                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter next action"
+                  />
                 </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Priority</label>
-                  <select className="w-full border rounded px-3 py-2 text-sm" value={form.priority} onChange={e => setForm(f => ({ ...f, priority: e.target.value }))}>
-                    <option value="Low">Low</option>
-                    <option value="Medium">Medium</option>
-                    <option value="High">High</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Notes</label>
-                  <textarea className="w-full border rounded px-3 py-2 text-sm" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
-                </div>
-                {formError && <div className="text-xs text-red-500">{formError}</div>}
-                <div className="flex justify-end gap-2 pt-2">
-                  <button type="button" className="px-4 py-2 rounded bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200 transition" onClick={() => { setShowAdd(false); setEditIndex(null); setForm({ ...emptyDispute }); }}>Cancel</button>
-                  <button type="submit" className="px-4 py-2 rounded bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition">{editIndex !== null ? 'Save Changes' : 'Create Dispute'}</button>
+
+                <div className="flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowAdd(false);
+                      setForm({ ...emptyDispute });
+                      setFormError('');
+                      setEditIndex(null);
+                    }}
+                    className="px-4 py-2 text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    {editIndex !== null ? 'Update Dispute' : 'Create Dispute'}
+                  </button>
                 </div>
               </form>
-            </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Templates Modal */}
+      <AnimatePresence>
+        {showTemplates && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+            >
+              <div className="p-6">
+                <div className="flex justify-between items-start mb-6">
+                  <div>
+                    <h2 className="text-xl font-bold text-gray-900">Dispute Templates</h2>
+                    <p className="text-gray-600 mt-1">Choose a template to start a new dispute</p>
+                  </div>
+                  <button
+                    onClick={() => setShowTemplates(false)}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {disputeTemplates.map(template => (
+                    <div
+                      key={template.id}
+                      className="bg-white rounded-xl border border-gray-200 p-4 hover:border-blue-500 transition-colors cursor-pointer"
+                      onClick={() => {
+                        setForm({
+                          ...emptyDispute,
+                          type: template.type,
+                          notes: template.description,
+                          nextAction: template.steps[0]
+                        });
+                        setShowTemplates(false);
+                        setShowAdd(true);
+                      }}
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="font-medium text-gray-900">{template.name}</h3>
+                        <span className="text-sm text-gray-500">{template.bureau}</span>
+                      </div>
+                      <p className="text-sm text-gray-600 mb-3">{template.description}</p>
+                      <div className="flex items-center gap-4 text-sm">
+                        <div className="flex items-center gap-1 text-green-600">
+                          <TrendingUp size={16} />
+                          {template.successRate}% Success
+                        </div>
+                        <div className="flex items-center gap-1 text-blue-600">
+                          <Target size={16} />
+                          +{template.avgImpact} pts
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

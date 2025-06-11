@@ -1,94 +1,189 @@
 import { Link } from 'react-router-dom';
-import { useState } from 'react';
-import { Menu, ChevronLeft, Home, Users, FileText, Briefcase, ListChecks, CreditCard, File, Star, Megaphone, Wrench, User, Settings, HelpCircle, BookOpen } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Menu, ChevronLeft, Home, Users, FileText, Briefcase, ListChecks, CreditCard, File, Star, Megaphone, Wrench, Settings, BookOpen, X, Clock, Target, Award, BarChart2 } from 'lucide-react';
 
-const navItems = [
-  { label: 'Dashboard', path: '/', icon: <Home className="w-5 h-5" /> },
+const navItems: { label: string; path: string; icon: React.ReactNode; badge?: string }[] = [
+  { label: 'Dashboard', path: '/dashboard', icon: <Home className="w-5 h-5" /> },
   { label: 'Why Credexis', path: '/why-credexis', icon: <BookOpen className="w-5 h-5" /> },
   { label: 'Clients', path: '/clients', icon: <Users className="w-5 h-5" /> },
   { label: 'Disputes', path: '/disputes', icon: <FileText className="w-5 h-5" /> },
   { label: 'Tasks', path: '/tasks', icon: <ListChecks className="w-5 h-5" /> },
   { label: 'Payments', path: '/payments', icon: <CreditCard className="w-5 h-5" /> },
   { label: 'Documents', path: '/documents', icon: <File className="w-5 h-5" /> },
-  { label: 'Letter Templates', path: '/letter-templates', badge: 'PRO', icon: <Star className="w-5 h-5" /> },
-  { label: 'Marketing', path: '/marketing', badge: 'PRO', icon: <Megaphone className="w-5 h-5" /> },
-  { label: 'Credit Tools', path: '/credit-tools', badge: 'PRO', icon: <Wrench className="w-5 h-5" /> },
+  { label: 'Letter Templates', path: '/letter-templates', icon: <Star className="w-5 h-5" /> },
+  { label: 'Marketing', path: '/marketing', icon: <Megaphone className="w-5 h-5" /> },
+  { label: 'Credit Tools', path: '/credit-tools', icon: <Wrench className="w-5 h-5" /> },
+  { label: 'Reports', path: '/reports', icon: <BarChart2 className="w-5 h-5" /> },
 ];
 
-export default function Sidebar({ currentPath }: { currentPath?: string }) {
-  const [collapsed, setCollapsed] = useState(false);
+export default function Sidebar() {
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [activePath, setActivePath] = useState(window.location.pathname);
+
+  // Close mobile menu when route changes
+  useEffect(() => {
+    setActivePath(window.location.pathname);
+    setIsMobileMenuOpen(false);
+  }, [window.location.pathname]);
+
+  // Handle window resize
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        setIsCollapsed(true);
+      } else {
+        setIsCollapsed(false);
+      }
+    };
+
+    handleResize(); // Initial check
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   return (
-    <aside className={`bg-gradient-to-b from-white to-indigo-50 border-r border-gray-200 flex flex-col min-h-screen shadow-sm transition-all duration-300 ${collapsed ? 'w-20' : 'w-64'}`}>
-      <div className={`h-16 flex items-center ${collapsed ? 'justify-center' : 'px-8'} text-2xl font-bold text-indigo-600 tracking-tight transition-all duration-300`}>
-        <span className={`${collapsed ? 'hidden' : 'block'}`}>Credexis</span>
-        <button
-          className={`ml-auto p-2 rounded hover:bg-indigo-50 transition ${collapsed ? 'mx-auto' : ''}`}
-          onClick={() => setCollapsed(c => !c)}
-          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        >
-          {collapsed ? <Menu className="w-6 h-6 text-indigo-600" /> : <ChevronLeft className="w-6 h-6 text-indigo-600" />}
-        </button>
-      </div>
-      <nav className={`flex-1 px-4 py-4 space-y-1 ${collapsed ? 'px-2' : ''}`}>
-        {navItems.map((item) => {
-          const isActive = currentPath === item.path;
-          return item.path ? (
-            <Link
-              key={item.label}
-              to={item.path}
-              className={`relative flex items-center gap-3 px-3 py-2 rounded-xl transition-colors cursor-pointer font-medium group ${isActive ? 'bg-indigo-100 text-indigo-700 font-bold shadow-sm' : 'text-gray-700 hover:bg-indigo-50'} ${collapsed ? 'justify-center' : ''}`}
-            >
-              {/* Active indicator bar */}
-              {isActive && <span className="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-1.5 bg-indigo-500 rounded-full" />}
-              <span className="z-10">{item.icon}</span>
-              {!collapsed && <span className="z-10">{item.label}</span>}
-              {item.badge && !collapsed && (
-                <span className="ml-auto text-xs bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full font-semibold">{item.badge}</span>
-              )}
-            </Link>
-          ) : null;
-        })}
-      </nav>
-      {/* Roadmap section at the bottom */}
-      <div className={`px-4 pt-2 pb-2 ${collapsed ? 'flex flex-col items-center gap-2' : ''}`}>
-        {collapsed ? (
-          <>
-            <span className="text-indigo-400 font-bold">E</span>
-            <span className="text-green-400 font-bold">C</span>
-            <span className="text-yellow-400 font-bold">A</span>
-          </>
+    <>
+      {/* Mobile Menu Button */}
+      <button
+        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        className="fixed top-4 left-4 z-50 md:hidden p-2 rounded-lg bg-white shadow-lg hover:bg-gray-50 transition-colors"
+        aria-label="Toggle mobile menu"
+      >
+        {isMobileMenuOpen ? (
+          <X className="w-6 h-6 text-gray-600" />
         ) : (
-          <>
-            <div className="mb-2 font-semibold text-indigo-700 flex items-center gap-2">
-              <svg className="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 17v-2a4 4 0 014-4h6" /></svg>
-              Roadmap
-            </div>
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center gap-2 bg-indigo-50 rounded-lg px-3 py-2">
-                <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M16 12H8m8 0a4 4 0 11-8 0 4 4 0 018 0zm-8 0V8a4 4 0 018 0v4" /></svg>
-                <span className="font-medium text-gray-700">Email Integration</span>
-                <span className="ml-auto text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-semibold">Q3 2024</span>
-              </div>
-              <div className="flex items-center gap-2 bg-green-50 rounded-lg px-3 py-2">
-                <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3" /></svg>
-                <span className="font-medium text-gray-700">Client Portal</span>
-                <span className="ml-auto text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-semibold">Q3 2024</span>
-              </div>
-              <div className="flex items-center gap-2 bg-yellow-50 rounded-lg px-3 py-2">
-                <svg className="w-4 h-4 text-yellow-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01" /></svg>
-                <span className="font-medium text-gray-700">Automation</span>
-                <span className="ml-auto text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full font-semibold">Q4 2024</span>
-              </div>
-            </div>
-          </>
+          <Menu className="w-6 h-6 text-gray-600" />
         )}
-      </div>
-      <div className={`px-4 py-4 border-t text-xs text-gray-400 bg-gray-50 mt-auto ${collapsed ? 'px-2' : ''}`}>
-        {!collapsed && <div className="mb-2 font-semibold text-gray-500">SETTINGS</div>}
-        <Link to="/settings" className={`mb-1 block cursor-pointer hover:text-indigo-600 text-gray-500 ${collapsed ? 'text-center' : ''}`}>{collapsed ? <User className="w-5 h-5 mx-auto" /> : 'Your Profile'}</Link>
-        <Link to="/account-settings" className={`mb-1 block cursor-pointer hover:text-indigo-600 text-gray-500 ${collapsed ? 'text-center' : ''}`}>{collapsed ? <Settings className="w-5 h-5 mx-auto" /> : 'Settings'}</Link>
-        <Link to="/help-support" className={`mb-4 block cursor-pointer hover:text-indigo-600 text-gray-500 ${collapsed ? 'text-center' : ''}`}>{collapsed ? <HelpCircle className="w-5 h-5 mx-auto" /> : 'Help & Support'}</Link>
-      </div>
-    </aside>
+      </button>
+
+      {/* Mobile Menu Overlay */}
+      {isMobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside
+        className={`fixed top-0 left-0 h-full bg-white border-r border-gray-200 transition-all duration-300 ease-in-out z-40
+          ${isCollapsed ? 'w-20' : 'w-64'}
+          ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
+      >
+        <div className="flex flex-col h-full">
+          {/* Logo */}
+          <div className="flex items-center justify-between p-4 border-b border-gray-200">
+            {!isCollapsed && (
+              <Link to="/" className="flex items-center space-x-2">
+                <div className="w-8 h-8 bg-gradient-to-r from-indigo-600 to-indigo-500 rounded-lg flex items-center justify-center">
+                  <span className="text-white font-bold text-lg">C</span>
+                </div>
+                <span className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-indigo-500 bg-clip-text text-transparent">
+                  Credexis
+                </span>
+              </Link>
+            )}
+            {isCollapsed && (
+              <Link to="/" className="flex items-center justify-center">
+                <div className="w-8 h-8 bg-gradient-to-r from-indigo-600 to-indigo-500 rounded-lg flex items-center justify-center">
+                  <span className="text-white font-bold text-lg">C</span>
+                </div>
+              </Link>
+            )}
+            <button
+              onClick={() => setIsCollapsed(!isCollapsed)}
+              className="hidden md:flex items-center justify-center w-8 h-8 rounded-lg hover:bg-gray-100 transition-colors"
+              aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              <ChevronLeft className={`w-5 h-5 text-gray-500 transition-transform ${isCollapsed ? 'rotate-180' : ''}`} />
+            </button>
+          </div>
+
+          {/* Navigation */}
+          <nav className="flex-1 overflow-y-auto py-4 px-2">
+            <ul className="space-y-1">
+              {navItems.map((item) => (
+                <li key={item.path}>
+                  <Link
+                    to={item.path}
+                    className={`flex items-center px-3 py-2.5 rounded-lg transition-colors
+                      ${activePath === item.path
+                        ? 'bg-indigo-50 text-indigo-600'
+                        : 'text-gray-600 hover:bg-gray-50'
+                      }
+                      ${isCollapsed ? 'justify-center' : 'justify-start'}`}
+                    onClick={() => {
+                      setActivePath(item.path);
+                      setIsMobileMenuOpen(false);
+                    }}
+                  >
+                    <span className="flex-shrink-0">{item.icon}</span>
+                    {!isCollapsed && (
+                      <span className="ml-3 font-medium">{item.label}</span>
+                    )}
+                    {item.badge && !isCollapsed && (
+                      <span className="ml-auto px-2 py-0.5 text-xs font-medium bg-indigo-100 text-indigo-600 rounded-full">
+                        {item.badge}
+                      </span>
+                    )}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+
+          {/* Roadmap Section */}
+          <div className={`px-4 pt-2 pb-2 ${isCollapsed ? 'flex flex-col items-center gap-2' : ''}`}>
+            {isCollapsed ? (
+              <>
+                <span className="text-indigo-400 font-bold">E</span>
+                <span className="text-green-400 font-bold">C</span>
+                <span className="text-yellow-400 font-bold">A</span>
+              </>
+            ) : (
+              <>
+                <div className="mb-2 font-semibold text-indigo-700 flex items-center gap-2">
+                  <Target className="w-4 h-4 text-indigo-500" />
+                  Roadmap
+                </div>
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2 bg-gradient-to-r from-blue-50 to-blue-50/50 rounded-lg px-3 py-2">
+                    <Clock className="w-4 h-4 text-blue-500" />
+                    <span className="font-medium text-gray-700">Email Integration</span>
+                    <span className="ml-auto text-xs bg-gradient-to-r from-blue-500/10 to-blue-400/10 text-blue-700 px-2 py-0.5 rounded-full font-semibold">Q3 2024</span>
+                  </div>
+                  <div className="flex items-center gap-2 bg-gradient-to-r from-green-50 to-green-50/50 rounded-lg px-3 py-2">
+                    <Users className="w-4 h-4 text-green-500" />
+                    <span className="font-medium text-gray-700">Client Portal</span>
+                    <span className="ml-auto text-xs bg-gradient-to-r from-green-500/10 to-green-400/10 text-green-700 px-2 py-0.5 rounded-full font-semibold">Q3 2024</span>
+                  </div>
+                  <div className="flex items-center gap-2 bg-gradient-to-r from-yellow-50 to-yellow-50/50 rounded-lg px-3 py-2">
+                    <Award className="w-4 h-4 text-yellow-500" />
+                    <span className="font-medium text-gray-700">Automation</span>
+                    <span className="ml-auto text-xs bg-gradient-to-r from-yellow-500/10 to-yellow-400/10 text-yellow-700 px-2 py-0.5 rounded-full font-semibold">Q4 2024</span>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Settings Section */}
+          <div className={`px-4 py-4 border-t border-gray-200 text-xs text-gray-400 bg-gradient-to-b from-white to-indigo-50/30 mt-auto ${isCollapsed ? 'px-2' : ''}`}>
+            {!isCollapsed && <div className="mb-2 font-semibold text-gray-500">SETTINGS</div>}
+            <Link
+              to="/settings"
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer hover:bg-indigo-50/50 hover:text-indigo-600 text-gray-500 transition-colors ${isCollapsed ? 'justify-center' : ''}`}
+            >
+              <Settings className="w-5 h-5" />
+              {!isCollapsed && <span>Settings</span>}
+            </Link>
+          </div>
+        </div>
+      </aside>
+
+      {/* Main Content Spacer */}
+      <div className={`transition-all duration-300 ease-in-out ${isCollapsed ? 'md:ml-20' : 'md:ml-64'}`} />
+    </>
   );
 }

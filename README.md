@@ -1,54 +1,186 @@
-# React + TypeScript + Vite
+# CredExis Pro
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A modern, feature-rich application for managing client relationships and tasks.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- 🔐 Secure authentication with JWT
+- 👥 Client management
+- ✅ Task tracking and management
+- 📊 Dashboard with analytics
+- 🎨 Customizable themes
+- 📱 Responsive design
+- 🌐 Internationalization support
 
-## Expanding the ESLint configuration
+## Tech Stack
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- **Frontend**: React, TypeScript, Redux Toolkit
+- **Styling**: Tailwind CSS, Framer Motion
+- **Testing**: Jest, React Testing Library, Cypress
+- **Build Tool**: Vite
+- **State Management**: Redux Toolkit
+- **Routing**: React Router
+- **Form Handling**: React Hook Form with Zod
+- **UI Components**: Custom components with Headless UI
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+## Prerequisites
+
+- Node.js (v18 or higher)
+- npm (v9 or higher)
+
+## Getting Started
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/credexispro.git
+   cd credexispro
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Create a `.env` file in the root directory:
+   ```env
+   VITE_API_URL=http://localhost:3001/api
+   VITE_APP_NAME=CredExis Pro
+   ```
+
+4. Start the development server:
+   ```bash
+   npm run dev
+   ```
+
+5. Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+## Available Scripts
+
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build
+- `npm run test` - Run unit tests
+- `npm run test:watch` - Run tests in watch mode
+- `npm run test:coverage` - Run tests with coverage
+- `npm run cypress:open` - Open Cypress Test Runner
+- `npm run cypress:run` - Run Cypress tests headlessly
+- `npm run test:e2e` - Run E2E tests with dev server
+
+## Project Structure
+
+```
+src/
+├── components/     # Reusable UI components
+├── features/       # Feature-specific components and logic
+├── hooks/         # Custom React hooks
+├── layouts/       # Layout components
+├── pages/         # Page components
+├── store/         # Redux store configuration
+├── styles/        # Global styles and Tailwind config
+├── types/         # TypeScript type definitions
+└── utils/         # Utility functions
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Development Guidelines
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### Code Style
 
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
+- Follow the TypeScript style guide
+- Use functional components with hooks
+- Implement proper error handling
+- Write unit tests for components
+- Document complex logic
+
+### Git Workflow
+
+1. Create a feature branch from `main`
+2. Make your changes
+3. Write tests
+4. Submit a pull request
+5. Get code review
+6. Merge to `main`
+
+### Testing
+
+- Write unit tests for components
+- Add integration tests for features
+- Include E2E tests for critical paths
+- Maintain 80% code coverage
+
+## API Documentation
+
+### Authentication
+
+```typescript
+POST /api/auth/login
+Content-Type: application/json
+
+{
+  "email": string,
+  "password": string
+}
+
+Response:
+{
+  "token": string,
+  "user": {
+    "id": string,
+    "email": string,
+    "name": string,
+    "role": string
+  }
+}
 ```
+
+### Clients
+
+```typescript
+GET /api/clients
+Authorization: Bearer <token>
+
+Response:
+{
+  "clients": Array<{
+    "id": string,
+    "name": string,
+    "email": string,
+    "phone": string,
+    "status": string
+  }>
+}
+```
+
+### Tasks
+
+```typescript
+GET /api/tasks
+Authorization: Bearer <token>
+
+Response:
+{
+  "tasks": Array<{
+    "id": string,
+    "title": string,
+    "description": string,
+    "status": string,
+    "dueDate": string,
+    "clientId": string
+  }>
+}
+```
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a pull request
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Support
+
+For support, email support@credexispro.com or create an issue in the repository.

@@ -6,6 +6,7 @@ import ClientGrowth from './ClientGrowth';
 import { motion } from 'framer-motion';
 import { PhoneCall, MessageCircle, Calendar, Plus, Zap, Upload, DollarSign, Mail, User, TrendingUp, Users } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import QuickActions from './components/QuickActions';
 
 const alertsData = [
   { type: 'urgent', icon: '⚠️', message: 'Overdue Task: Follow up with John Doe', time: '2h ago' },
@@ -18,7 +19,7 @@ const alertsData = [
 export function AlertsDropdown({ open }: { open: boolean }) {
   if (!open) return null;
   return (
-    <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-gray-100 z-50">
+    <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-100 z-50">
       <div className="font-semibold text-base px-4 pt-4 pb-2 text-gray-900 flex items-center gap-2">
         <span className="text-yellow-500 text-lg">🔔</span> Alerts & Notifications
       </div>
@@ -133,33 +134,6 @@ const UpcomingAppointments = () => {
     </div>
   );
 };
-
-const quickActions = [
-  { icon: <Plus className="w-5 h-5" />, label: 'Add Client' },
-  { icon: <Zap className="w-5 h-5" />, label: 'Start Dispute' },
-  { icon: <Upload className="w-5 h-5" />, label: 'Upload Doc' },
-  { icon: <DollarSign className="w-5 h-5" />, label: 'Record Payment' },
-  { icon: <Mail className="w-5 h-5" />, label: 'Send Letter' },
-];
-
-const QuickActions = () => (
-  <div className="bg-white rounded-2xl p-6 shadow-lg mb-6">
-    <div className="font-semibold text-lg mb-4 text-gray-900 flex items-center gap-2">
-      <span className="text-indigo-500 text-xl">⚡</span> Quick Actions
-    </div>
-    <div className="flex flex-wrap gap-3">
-      {quickActions.map((action, idx) => (
-        <button
-          key={idx}
-          className="flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-50 text-indigo-700 font-semibold shadow hover:bg-indigo-100 transition text-sm"
-        >
-          <span className="text-lg">{action.icon}</span>
-          {action.label}
-        </button>
-      ))}
-    </div>
-  </div>
-);
 
 const trendsData = [
   { label: 'Dispute Success', value: '68%', trend: '+5%', icon: <TrendingUp className="w-5 h-5" />, color: 'text-green-600', chart: 'bar' },

@@ -1,116 +1,392 @@
-import React, { useState } from 'react';
-import { User, Mail, Phone, MapPin, Save } from 'lucide-react';
+import { useState } from 'react';
+import { User, Bell, Lock, CreditCard, Globe, Shield, HelpCircle, LogOut, Check, X, UserCircle, Sun, Moon, Globe2, Languages, Accessibility, Download, Trash2, Mail, MessageSquare, Smartphone, ShieldCheck, KeyRound, EyeOff, CheckCircle2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Link } from 'react-router-dom';
+import toast from 'react-hot-toast';
+
+const settingsSections = [
+  { id: 'profile', label: 'Profile', icon: <User className="w-5 h-5" /> },
+  { id: 'notifications', label: 'Notifications', icon: <Bell className="w-5 h-5" /> },
+  { id: 'security', label: 'Security', icon: <Lock className="w-5 h-5" /> },
+  { id: 'billing', label: 'Billing', icon: <CreditCard className="w-5 h-5" /> },
+  { id: 'preferences', label: 'Preferences', icon: <Globe className="w-5 h-5" /> },
+  { id: 'privacy', label: 'Privacy', icon: <Shield className="w-5 h-5" /> },
+  { id: 'help', label: 'Help & Support', icon: <HelpCircle className="w-5 h-5" /> },
+];
+
+const plans = [
+  {
+    id: 'basic',
+    name: 'Basic',
+    price: 29,
+    description: 'Perfect for individuals and small businesses',
+    features: [
+      'Up to 50 clients',
+      'Basic dispute management',
+      'Email support',
+      'Standard templates',
+      'Basic analytics',
+    ],
+    limitations: [
+      'No priority support',
+      'No custom branding',
+      'Limited API access',
+    ],
+    popular: false,
+  },
+  {
+    id: 'pro',
+    name: 'Pro',
+    price: 49,
+    description: 'Ideal for growing businesses',
+    features: [
+      'Up to 200 clients',
+      'Advanced dispute management',
+      'Priority email support',
+      'Custom templates',
+      'Advanced analytics',
+      'API access',
+      'Custom branding',
+    ],
+    limitations: [
+      'No dedicated account manager',
+      'Limited automation',
+    ],
+    popular: true,
+  },
+  {
+    id: 'enterprise',
+    name: 'Enterprise',
+    price: 99,
+    description: 'For large organizations with advanced needs',
+    features: [
+      'Unlimited clients',
+      'Enterprise dispute management',
+      '24/7 priority support',
+      'Custom templates & workflows',
+      'Advanced analytics & reporting',
+      'Full API access',
+      'Custom branding & white-labeling',
+      'Dedicated account manager',
+      'Advanced automation',
+      'Custom integrations',
+    ],
+    limitations: [],
+    popular: false,
+  },
+];
+
+function PlanSelectionModal({ isOpen, onClose, currentPlan }: { isOpen: boolean; onClose: () => void; currentPlan: string }) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        className="bg-white rounded-2xl shadow-xl max-w-5xl w-full max-h-[90vh] overflow-y-auto"
+      >
+        <div className="p-6 border-b border-gray-100">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold text-gray-900">Choose Your Plan</h2>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <X className="w-5 h-5 text-gray-500" />
+            </button>
+          </div>
+          <p className="text-gray-500 mt-1">Select the plan that best fits your needs</p>
+        </div>
+
+        <div className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {plans.map((plan) => (
+              <div
+                key={plan.id}
+                className={`relative rounded-xl border ${
+                  plan.popular
+                    ? 'border-indigo-500 shadow-lg'
+                    : 'border-gray-200'
+                } p-6 flex flex-col`}
+              >
+                {plan.popular && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-indigo-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                    Most Popular
+                  </div>
+                )}
+                <div className="flex-1">
+                  <h3 className="text-xl font-bold text-gray-900">{plan.name}</h3>
+                  <div className="mt-2">
+                    <span className="text-3xl font-bold text-gray-900">${plan.price}</span>
+                    <span className="text-gray-500">/month</span>
+                  </div>
+                  <p className="text-gray-500 mt-2">{plan.description}</p>
+                  
+                  <div className="mt-6 space-y-4">
+                    <div>
+                      <h4 className="font-medium text-gray-900 mb-2">Features</h4>
+                      <ul className="space-y-2">
+                        {plan.features.map((feature, idx) => (
+                          <li key={idx} className="flex items-center gap-2 text-gray-600">
+                            <Check className="w-5 h-5 text-green-500" />
+                            <span>{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    {plan.limitations.length > 0 && (
+                      <div>
+                        <h4 className="font-medium text-gray-900 mb-2">Limitations</h4>
+                        <ul className="space-y-2">
+                          {plan.limitations.map((limitation, idx) => (
+                            <li key={idx} className="flex items-center gap-2 text-gray-600">
+                              <X className="w-5 h-5 text-red-500" />
+                              <span>{limitation}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <button
+                  className={`mt-6 w-full py-2 px-4 rounded-lg font-medium transition-colors ${
+                    currentPlan === plan.id
+                      ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
+                      : plan.popular
+                      ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                      : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                  }`}
+                  disabled={currentPlan === plan.id}
+                >
+                  {currentPlan === plan.id ? 'Current Plan' : 'Select Plan'}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
 
 export default function Settings() {
-  const [profile, setProfile] = useState({
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    phone: '123-456-7890',
-    address: '123 Main St, Anytown, USA',
-  });
-  const [saving, setSaving] = useState(false);
-  const [success, setSuccess] = useState(false);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setProfile((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
-    setSuccess(false);
-    setTimeout(() => {
-      setSaving(false);
-      setSuccess(true);
-      setTimeout(() => setSuccess(false), 2000);
-    }, 1200);
+  const [activeSection, setActiveSection] = useState('profile');
+  const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
+  const [currentPlan, setCurrentPlan] = useState('pro'); // This would come from your backend
+  const user = {
+    name: 'Irvens Dupuy',
+    email: 'irvens@email.com',
+    avatar: '',
+    plan: 'Pro',
   };
 
   return (
-    <div className="min-h-[80vh] bg-gradient-to-br from-indigo-50 to-white flex items-center justify-center py-12 px-2 sm:px-4">
-      <div className="w-full max-w-xl bg-white rounded-2xl shadow-2xl p-8 flex flex-col items-center relative">
-        <div className="-mt-16 mb-4 flex flex-col items-center">
-          <div className="w-24 h-24 rounded-full bg-indigo-100 flex items-center justify-center shadow-lg border-4 border-white">
-            <User className="w-12 h-12 text-indigo-500" />
+    <div className="flex flex-col md:flex-row gap-8 p-6 max-w-[1400px] mx-auto">
+      {/* Sidebar */}
+      <div className="w-full md:w-72 bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex flex-col justify-between min-h-[600px]">
+        <div>
+          {/* User Info */}
+          <div className="flex flex-col items-center gap-2 mb-6">
+            <div className="h-16 w-16 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-3xl font-bold">
+              {user.avatar ? <img src={user.avatar} alt="avatar" className="rounded-full w-16 h-16 object-cover" /> : user.name[0]}
+            </div>
+            <div className="text-center">
+              <div className="font-semibold text-gray-900">{user.name}</div>
+              <div className="text-sm text-gray-500">{user.email}</div>
+              <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-xs bg-blue-50 text-blue-700 font-medium">{user.plan} Plan</span>
+            </div>
           </div>
-          <h2 className="text-2xl font-bold text-gray-800 mt-4">Your Profile</h2>
-          <p className="text-gray-500 text-sm">Manage your personal information</p>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Settings</h2>
+          <nav className="space-y-1">
+            {settingsSections.map((section) => (
+              <button
+                key={section.id}
+                onClick={() => setActiveSection(section.id)}
+                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 ${
+                  activeSection === section.id
+                    ? 'bg-gradient-to-r from-blue-500/10 to-blue-500/5 text-blue-700 font-semibold shadow'
+                    : 'text-gray-600 hover:bg-blue-50/50 hover:text-blue-600'
+                }`}
+              >
+                <span className={`${activeSection === section.id ? 'text-blue-600' : 'text-gray-500'}`}>{section.icon}</span>
+                <span>{section.label}</span>
+              </button>
+            ))}
+          </nav>
         </div>
-        <form onSubmit={handleSubmit} className="w-full mt-4 space-y-5">
-          <div className="relative">
-            <label className="block text-gray-700 mb-1 font-medium" htmlFor="name">Name</label>
-            <div className="flex items-center border rounded-lg px-3 py-2 bg-gray-50 focus-within:ring-2 focus-within:ring-indigo-200">
-              <User className="w-5 h-5 text-indigo-400 mr-2" />
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={profile.name}
-                onChange={handleChange}
-                className="w-full bg-transparent outline-none text-gray-800"
-                autoComplete="name"
-              />
-            </div>
-          </div>
-          <div className="relative">
-            <label className="block text-gray-700 mb-1 font-medium" htmlFor="email">Email</label>
-            <div className="flex items-center border rounded-lg px-3 py-2 bg-gray-50 focus-within:ring-2 focus-within:ring-indigo-200">
-              <Mail className="w-5 h-5 text-indigo-400 mr-2" />
-              <input
-                type="email"
-                id="email"
-                name="email"
-                value={profile.email}
-                onChange={handleChange}
-                className="w-full bg-transparent outline-none text-gray-800"
-                autoComplete="email"
-              />
-            </div>
-          </div>
-          <div className="relative">
-            <label className="block text-gray-700 mb-1 font-medium" htmlFor="phone">Phone</label>
-            <div className="flex items-center border rounded-lg px-3 py-2 bg-gray-50 focus-within:ring-2 focus-within:ring-indigo-200">
-              <Phone className="w-5 h-5 text-indigo-400 mr-2" />
-              <input
-                type="text"
-                id="phone"
-                name="phone"
-                value={profile.phone}
-                onChange={handleChange}
-                className="w-full bg-transparent outline-none text-gray-800"
-                autoComplete="tel"
-              />
-            </div>
-          </div>
-          <div className="relative">
-            <label className="block text-gray-700 mb-1 font-medium" htmlFor="address">Address</label>
-            <div className="flex items-center border rounded-lg px-3 py-2 bg-gray-50 focus-within:ring-2 focus-within:ring-indigo-200">
-              <MapPin className="w-5 h-5 text-indigo-400 mr-2" />
-              <input
-                type="text"
-                id="address"
-                name="address"
-                value={profile.address}
-                onChange={handleChange}
-                className="w-full bg-transparent outline-none text-gray-800"
-                autoComplete="street-address"
-              />
-            </div>
-          </div>
-          <button
-            type="submit"
-            className={`w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-semibold text-white transition shadow-lg ${saving ? 'bg-indigo-300 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'}`}
-            disabled={saving}
-          >
-            <Save className="w-5 h-5" />
-            {saving ? 'Saving...' : 'Save Changes'}
-          </button>
-          {success && (
-            <div className="text-green-600 text-center font-medium mt-2">Profile updated successfully!</div>
-          )}
-        </form>
+        <button className="flex items-center gap-2 px-3 py-2 mt-8 text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+          <LogOut size={20} />
+          Log Out
+        </button>
       </div>
+      {/* Main Content */}
+      <div className="flex-1 bg-white rounded-xl shadow-sm border border-gray-100 p-6 min-h-[600px]">
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold text-gray-900 mb-1">Account Settings</h1>
+          <p className="text-gray-600">Manage your profile, preferences, security, and more</p>
+        </div>
+        {/* Section Content */}
+        <div>
+          {activeSection === 'profile' && (
+            <div className="max-w-xl">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Profile</h2>
+              <form className="space-y-6">
+                <div className="flex items-center gap-4">
+                  <div className="h-16 w-16 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-3xl font-bold">
+                    {user.avatar ? <img src={user.avatar} alt="avatar" className="rounded-full w-16 h-16 object-cover" /> : user.name[0]}
+                  </div>
+                  <button type="button" className="px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors">Change Avatar</button>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                  <input type="text" className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm" defaultValue={user.name} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                  <input type="email" className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm" defaultValue={user.email} />
+                </div>
+                <div className="flex gap-3">
+                  <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">Save Changes</button>
+                  <button type="button" className="px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">Cancel</button>
+                </div>
+              </form>
+            </div>
+          )}
+          {activeSection === 'notifications' && (
+            <div className="max-w-xl">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Notifications</h2>
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-2"><Mail size={18} /> Email Notifications</span>
+                  <input type="checkbox" className="toggle toggle-primary" defaultChecked />
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-2"><MessageSquare size={18} /> SMS Notifications</span>
+                  <input type="checkbox" className="toggle toggle-primary" />
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-2"><Smartphone size={18} /> Push Notifications</span>
+                  <input type="checkbox" className="toggle toggle-primary" />
+                </div>
+              </div>
+            </div>
+          )}
+          {activeSection === 'security' && (
+            <div className="max-w-xl">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Security</h2>
+              <form className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
+                  <input type="password" className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+                  <input type="password" className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
+                  <input type="password" className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm" />
+                </div>
+                <div className="flex gap-3">
+                  <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">Change Password</button>
+                  <button type="button" className="px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">Cancel</button>
+                </div>
+              </form>
+            </div>
+          )}
+          {activeSection === 'billing' && (
+            <div className="max-w-2xl">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Billing & Plans</h2>
+              <button onClick={() => setIsPlanModalOpen(true)} className="mb-6 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">Change Plan</button>
+              {/* Plan cards and payment method management would go here */}
+              <div className="bg-gray-50 rounded-lg p-4 border border-gray-100 mb-4">
+                <div className="font-medium text-gray-900 mb-2">Current Plan</div>
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-0.5 rounded-full text-xs bg-blue-50 text-blue-700 font-medium">{user.plan}</span>
+                  <span className="text-gray-500">$49/mo</span>
+                </div>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-4 border border-gray-100">
+                <div className="font-medium text-gray-900 mb-2">Payment Method</div>
+                <div className="flex items-center gap-2">
+                  <CreditCard size={20} className="text-gray-400" />
+                  <span className="text-gray-700">Visa ending in 1234</span>
+                  <button className="ml-auto px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors">Update</button>
+                </div>
+              </div>
+            </div>
+          )}
+          {activeSection === 'preferences' && (
+            <div className="max-w-xl">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Preferences</h2>
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-2"><Sun size={18} /> Theme</span>
+                  <select className="rounded-lg border border-gray-200 px-3 py-2 text-sm">
+                    <option>System</option>
+                    <option>Light</option>
+                    <option>Dark</option>
+                  </select>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-2"><Globe2 size={18} /> Language</span>
+                  <select className="rounded-lg border border-gray-200 px-3 py-2 text-sm">
+                    <option>English</option>
+                    <option>Spanish</option>
+                  </select>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-2"><Accessibility size={18} /> Accessibility</span>
+                  <input type="checkbox" className="toggle toggle-primary" />
+                </div>
+              </div>
+            </div>
+          )}
+          {activeSection === 'privacy' && (
+            <div className="max-w-xl">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Privacy & Data</h2>
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-2"><Download size={18} /> Export Data</span>
+                  <button className="px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors">Export</button>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-2"><Trash2 size={18} /> Delete Account</span>
+                  <button className="px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">Delete</button>
+                </div>
+              </div>
+            </div>
+          )}
+          {activeSection === 'help' && (
+            <div className="max-w-xl">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Help & Support</h2>
+              <div className="space-y-6">
+                <div className="flex items-center gap-2">
+                  <HelpCircle size={18} />
+                  <span>Need help? Contact our support team or browse the FAQ.</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Mail size={18} />
+                  <span>support@credexispro.com</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <ShieldCheck size={18} />
+                  <span>Secure & Private</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+      {/* Plan Modal */}
+      <AnimatePresence>
+        {isPlanModalOpen && (
+          <PlanSelectionModal isOpen={isPlanModalOpen} onClose={() => setIsPlanModalOpen(false)} currentPlan={currentPlan} />
+        )}
+      </AnimatePresence>
     </div>
   );
 } 

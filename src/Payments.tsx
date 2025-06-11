@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Eye, Edit, Trash2, X, DollarSign, CreditCard, Building2, CheckCircle2, AlertCircle, Wallet } from 'lucide-react';
+import { Search, Eye, Edit, Trash2, X, DollarSign, CreditCard, Building2, CheckCircle2, AlertCircle, Wallet, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 
@@ -188,275 +188,309 @@ export default function Payments() {
     }).format(amount);
   }
 
+  function getStatusColor(status: string) {
+    switch (status) {
+      case 'paid':
+      case 'Paid':
+        return 'bg-green-100 text-green-800';
+      case 'pending':
+      case 'Pending':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'failed':
+      case 'Failed':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  }
+
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
-      <div className="flex flex-col sm:flex-row items-center justify-between mb-8 gap-6">
-        <h1 className="text-3xl font-bold text-gray-900">Payments</h1>
-        <button className="flex items-center gap-2 px-6 py-2 rounded-full bg-indigo-600 text-white font-semibold shadow hover:bg-indigo-700 transition text-base" onClick={() => { setShowAdd(true); setEditIndex(null); setForm({ ...emptyPayment }); }}>
-          Record Payment
-        </button>
-      </div>
-      <div className="flex flex-col sm:flex-row items-center gap-4 mb-6">
-        <div className="relative w-full max-w-xs">
-          <input
-            className="w-full pl-10 pr-3 py-2 rounded-lg border border-gray-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none text-sm bg-white"
-            placeholder="Search payments..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
-          <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
-        </div>
-        <div className="flex gap-2">
+    <AnimatePresence mode="wait">
+      <motion.div
+        key="payments-page"
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 24 }}
+        transition={{ duration: 0.5, type: 'spring', stiffness: 80, damping: 20 }}
+        className="space-y-8 p-4 sm:p-8 bg-gray-50 min-h-screen"
+      >
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1, duration: 0.5 }}
+          className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-2"
+        >
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">Payments & Billing</h1>
+            <p className="text-base sm:text-lg text-gray-500 mt-1">View payment history, manage invoices, and update payment methods</p>
+          </div>
           <button
-            className={`px-4 py-2 rounded-lg text-sm font-semibold ${filter === 'all' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-            onClick={() => setFilter('all')}
+            className="flex items-center gap-2 px-6 py-2 rounded-full bg-indigo-600 text-white font-semibold shadow-md hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-400 focus:outline-none transition text-base w-full sm:w-auto"
+            onClick={() => setShowAdd(true)}
           >
-            All
+            <Plus className="w-5 h-5" /> New Payment
           </button>
-          <button
-            className={`px-4 py-2 rounded-lg text-sm font-semibold ${filter === 'completed' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-            onClick={() => setFilter('completed')}
-          >
-            Completed
-          </button>
-          <button
-            className={`px-4 py-2 rounded-lg text-sm font-semibold ${filter === 'pending' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-            onClick={() => setFilter('pending')}
-          >
-            Pending
-          </button>
-          <button
-            className={`px-4 py-2 rounded-lg text-sm font-semibold ${filter === 'failed' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-            onClick={() => setFilter('failed')}
-          >
-            Failed
-          </button>
-        </div>
-        {someChecked && (
-          <button className="ml-2 px-4 py-2 rounded bg-red-600 text-white font-semibold hover:bg-red-700 transition" onClick={handleBulkDelete}>
-            Delete Selected
-          </button>
-        )}
-      </div>
-      {loading ? (
-        <>
-          <style>{shimmer}</style>
-          <div className="space-y-4">
-            {[...Array(4)].map((_, i) => (
-              <div
-                key={i}
-                className="h-12 w-full rounded-lg relative overflow-hidden bg-gray-100"
-                style={{ position: 'relative' }}
+        </motion.div>
+        {/* Filters/Search */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2, duration: 0.5 }}
+          className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 mb-2"
+        >
+          <div className="relative w-full">
+            <input
+              className="w-full pl-10 pr-3 py-2 rounded-lg border border-gray-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none text-base bg-white shadow-sm placeholder-gray-400"
+              placeholder="Search payments..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+            <Search className="absolute left-3 top-2.5 w-5 h-5 text-gray-400" />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {['all', 'paid', 'pending', 'failed'].map(f => (
+              <button
+                key={f}
+                className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-base font-semibold border transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-indigo-400 ${filter === f ? 'bg-indigo-600 text-white border-indigo-600 shadow' : 'bg-white text-gray-700 border-gray-200 hover:bg-indigo-50 hover:border-indigo-400'}`}
+                onClick={() => setFilter(f as typeof filter)}
               >
-                <div
-                  className="absolute inset-0"
-                  style={{
-                    background: 'linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%)',
-                    backgroundSize: '400px 100%',
-                    animation: 'shimmer 1.2s infinite',
-                  }}
-                />
-              </div>
+                {f.charAt(0).toUpperCase() + f.slice(1)}
+              </button>
             ))}
           </div>
-        </>
-      ) : paginated.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-gray-400">
-          <Wallet className="w-16 h-16 text-indigo-200 mb-4" />
-          <div className="text-xl font-semibold text-gray-500 mb-2">No payments found</div>
-          <div className="text-gray-400 mb-6">Record your first payment to get started.</div>
-          <button
-            className="flex items-center gap-2 px-6 py-2 rounded-full bg-indigo-600 text-white font-semibold shadow hover:bg-indigo-700 transition text-base"
-            onClick={() => { setShowAdd(true); setEditIndex(null); setForm({ ...emptyPayment }); }}
-          >
-            <DollarSign className="w-5 h-5" /> Record Payment
-          </button>
-        </div>
-      ) : (
-        <motion.table initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="w-full text-sm bg-white rounded-2xl shadow-lg overflow-hidden">
-          <thead>
-            <tr className="text-gray-400 text-xs bg-gray-50">
-              <th className="py-3 px-4"><input type="checkbox" checked={allChecked} ref={el => { if (el) el.indeterminate = !allChecked && someChecked; }} onChange={e => handleCheckAll(e.target.checked)} /></th>
-              <th className="text-left font-normal py-3 px-4">Client</th>
-              <th className="text-left font-normal py-3 px-4">Amount</th>
-              <th className="text-left font-normal py-3 px-4">Type</th>
-              <th className="text-left font-normal py-3 px-4">Status</th>
-              <th className="text-left font-normal py-3 px-4">Date</th>
-              <th className="text-left font-normal py-3 px-4">Reference</th>
-              <th className="text-left font-normal py-3 px-4">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {paginated.map((payment, idx) => (
-              <tr key={payment.id} className="border-t border-gray-100 hover:bg-indigo-50 transition-colors">
-                <td className="py-3 px-4"><input type="checkbox" checked={checked.includes(payment.id)} onChange={e => handleCheck(payment.id, e.target.checked)} /></td>
-                <td className="py-3 px-4 font-medium text-gray-900">{payment.client}</td>
-                <td className="py-3 px-4 text-gray-700">{formatCurrency(payment.amount)}</td>
-                <td className="py-3 px-4">
-                  <div className="flex items-center gap-1">
-                    {getPaymentTypeIcon(payment.type)}
-                    <span className="text-gray-700">{payment.type}</span>
-                  </div>
-                </td>
-                <td className="py-3 px-4">
-                  <div className="flex items-center gap-1">
-                    {getStatusIcon(payment.status)}
-                    <span className="text-gray-700">{payment.status}</span>
-                  </div>
-                </td>
-                <td className="py-3 px-4 text-gray-500">{formatDate(payment.date)}</td>
-                <td className="py-3 px-4 text-gray-500">{payment.reference}</td>
-                <td className="py-3 px-4 flex gap-2">
-                  <button className="p-1 rounded hover:bg-indigo-100 transition" title="View" onClick={() => setSelected(payment)}><Eye className="w-4 h-4 text-indigo-600" /></button>
-                  <button className="p-1 rounded hover:bg-indigo-100 transition" title="Edit" onClick={() => handleEdit(payment, (page - 1) * PAGE_SIZE + idx)}><Edit className="w-4 h-4 text-indigo-600" /></button>
-                  <button className="p-1 rounded hover:bg-red-100 transition" title="Delete" onClick={() => { setPayments(payments => payments.filter(p => p.id !== payment.id)); toast.success('Payment deleted!'); }}><Trash2 className="w-4 h-4 text-red-500" /></button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </motion.table>
-      )}
-      {/* Pagination Controls */}
-      {!loading && totalPages > 1 && (
-        <div className="flex justify-center items-center gap-2 mt-6">
-          <button
-            className="px-3 py-1 rounded bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200 transition"
-            disabled={page === 1}
-            onClick={() => setPage(p => Math.max(1, p - 1))}
-          >
-            Previous
-          </button>
-          <span className="text-sm text-gray-500">Page {page} of {totalPages}</span>
-          <button
-            className="px-3 py-1 rounded bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200 transition"
-            disabled={page === totalPages}
-            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-          >
-            Next
-          </button>
-        </div>
-      )}
-      <AnimatePresence>
-        {selected && (
-          <motion.div
-            initial={{ x: '100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '100%' }}
-            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            className="fixed top-0 right-0 h-full w-full sm:w-[400px] bg-white shadow-2xl z-50 flex flex-col"
-          >
-            <div className="flex items-center justify-between p-6 border-b">
-              <div className="font-bold text-lg text-gray-900">Payment Details</div>
-              <button onClick={() => setSelected(null)} className="p-2 rounded hover:bg-gray-100">
-                <X className="w-5 h-5 text-gray-500" />
+        </motion.div>
+        {/* Main Content */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3, duration: 0.5 }}
+          className="bg-white rounded-2xl shadow-xl p-0.5"
+        >
+          {loading ? (
+            <div className="space-y-4 p-6">
+              {[...Array(6)].map((_, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.1 + i * 0.07, duration: 0.4 }}
+                  className="h-12 w-full rounded-lg relative overflow-hidden bg-gray-100"
+                  style={{ position: 'relative' }}
+                >
+                  <div
+                    className="absolute inset-0"
+                    style={{
+                      background: 'linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%)',
+                      backgroundSize: '400px 100%',
+                      animation: 'shimmer 1.2s infinite',
+                    }}
+                  />
+                </motion.div>
+              ))}
+            </div>
+          ) : paginated.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-gray-400">
+              <CreditCard className="w-16 h-16 text-indigo-200 mb-4" />
+              <div className="text-2xl font-semibold text-gray-500 mb-2">No payments found</div>
+              <div className="text-gray-400 mb-6">Add your first payment to get started.</div>
+              <button
+                className="flex items-center gap-2 px-6 py-2 rounded-full bg-indigo-600 text-white font-semibold shadow hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-400 focus:outline-none transition text-base"
+                onClick={() => setShowAdd(true)}
+              >
+                <Plus className="w-5 h-5" /> New Payment
               </button>
             </div>
-            <div className="p-6 space-y-4 flex-1 overflow-y-auto">
-              <div>
-                <div className="text-xs text-gray-400 mb-1">Client</div>
-                <div className="font-semibold text-gray-900">{selected.client}</div>
-              </div>
-              <div>
-                <div className="text-xs text-gray-400 mb-1">Amount</div>
-                <div className="text-gray-700">{formatCurrency(selected.amount)}</div>
-              </div>
-              <div>
-                <div className="text-xs text-gray-400 mb-1">Type</div>
-                <div className="flex items-center gap-1">
-                  {getPaymentTypeIcon(selected.type)}
-                  <span className="text-gray-700">{selected.type}</span>
-                </div>
-              </div>
-              <div>
-                <div className="text-xs text-gray-400 mb-1">Status</div>
-                <div className="flex items-center gap-1">
-                  {getStatusIcon(selected.status)}
-                  <span className="text-gray-700">{selected.status}</span>
-                </div>
-              </div>
-              <div>
-                <div className="text-xs text-gray-400 mb-1">Date</div>
-                <div className="text-gray-500">{formatDate(selected.date)}</div>
-              </div>
-              <div>
-                <div className="text-xs text-gray-400 mb-1">Reference</div>
-                <div className="text-gray-500">{selected.reference}</div>
-              </div>
-              <div>
-                <div className="text-xs text-gray-400 mb-1">Notes</div>
-                <div className="text-gray-700">{selected.notes}</div>
-              </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <motion.table className="w-full text-base bg-white rounded-2xl shadow-xl">
+                <thead>
+                  <tr className="text-gray-400 text-xs bg-gray-50">
+                    <th className="py-4 px-4 font-semibold tracking-wide">Date</th>
+                    <th className="text-left font-semibold py-4 px-4 tracking-wide">Amount</th>
+                    <th className="text-left font-semibold py-4 px-4 tracking-wide">Status</th>
+                    <th className="text-left font-semibold py-4 px-4 tracking-wide">Method</th>
+                    <th className="text-left font-semibold py-4 px-4 tracking-wide">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <AnimatePresence>
+                    {paginated.map((payment, idx) => (
+                      <motion.tr
+                        key={payment.id}
+                        initial={{ opacity: 0, y: 12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 12 }}
+                        transition={{ delay: 0.05 * idx, duration: 0.4 }}
+                        className="border-t border-gray-100 hover:bg-indigo-50 transition-colors group"
+                      >
+                        <td className="py-4 px-4 whitespace-nowrap">{formatDate(payment.date)}</td>
+                        <td className="py-4 px-4 font-medium text-gray-900 whitespace-nowrap">${payment.amount.toFixed(2)}</td>
+                        <td className="py-4 px-4 whitespace-nowrap">
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getStatusColor(payment.status)} shadow-sm`}>{payment.status}</span>
+                        </td>
+                        <td className="py-4 px-4 text-gray-700 whitespace-nowrap">{payment.type}</td>
+                        <td className="py-4 px-4 whitespace-nowrap">
+                          <div className="flex gap-2">
+                            <button className="p-2 rounded hover:bg-indigo-100 focus:bg-indigo-200 transition shadow-sm" title="View" onClick={() => setSelected(payment)}><Eye className="w-5 h-5 text-indigo-600" /></button>
+                            <button className="p-2 rounded hover:bg-red-100 focus:bg-red-200 transition shadow-sm" title="Delete" onClick={() => { setPayments(payments => payments.filter(p => p.id !== payment.id)); toast.success('Payment deleted!'); }}><Trash2 className="w-5 h-5 text-red-500" /></button>
+                          </div>
+                        </td>
+                      </motion.tr>
+                    ))}
+                  </AnimatePresence>
+                </tbody>
+              </motion.table>
             </div>
-          </motion.div>
-        )}
-        {showAdd && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/30"
-          >
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8 relative">
-              <button onClick={() => { setShowAdd(false); setEditIndex(null); setForm({ ...emptyPayment }); }} className="absolute top-4 right-4 p-2 rounded hover:bg-gray-100">
-                <X className="w-5 h-5 text-gray-500" />
+          )}
+          {/* Pagination Controls */}
+          {!loading && totalPages > 1 && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4, duration: 0.4 }}
+              className="flex justify-center items-center gap-2 mt-8"
+            >
+              <button
+                className="px-3 py-2 rounded bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200 focus:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition"
+                disabled={page === 1}
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+              >
+                Previous
               </button>
-              <div className="font-bold text-lg text-gray-900 mb-4">{editIndex !== null ? 'Edit Payment' : 'Record Payment'}</div>
-              <form className="space-y-4" onSubmit={handleAddPayment}>
+              <span className="text-base text-gray-500">Page {page} of {totalPages}</span>
+              <button
+                className="px-3 py-2 rounded bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200 focus:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition"
+                disabled={page === totalPages}
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              >
+                Next
+              </button>
+            </motion.div>
+          )}
+        </motion.div>
+        <AnimatePresence>
+          {selected && (
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+              className="fixed top-0 right-0 h-full w-full sm:w-[400px] bg-white shadow-2xl z-50 flex flex-col"
+            >
+              <div className="flex items-center justify-between p-6 border-b">
+                <div className="font-bold text-lg text-gray-900">Payment Details</div>
+                <button onClick={() => setSelected(null)} className="p-2 rounded hover:bg-gray-100">
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+              <div className="p-6 space-y-4 flex-1 overflow-y-auto">
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Client *</label>
-                  <input className="w-full border rounded px-3 py-2 text-sm" value={form.client} onChange={e => setForm(f => ({ ...f, client: e.target.value }))} required />
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Amount *</label>
-                  <input 
-                    type="number" 
-                    step="0.01" 
-                    min="0"
-                    className="w-full border rounded px-3 py-2 text-sm" 
-                    value={form.amount} 
-                    onChange={e => setForm(f => ({ ...f, amount: parseFloat(e.target.value) }))} 
-                    required 
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Type</label>
-                  <select className="w-full border rounded px-3 py-2 text-sm" value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))}>
-                    <option value="Credit Card">Credit Card</option>
-                    <option value="Bank Transfer">Bank Transfer</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Status</label>
-                  <select className="w-full border rounded px-3 py-2 text-sm" value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))}>
-                    <option value="Pending">Pending</option>
-                    <option value="Completed">Completed</option>
-                    <option value="Failed">Failed</option>
-                  </select>
+                  <div className="text-xs text-gray-400 mb-1">Client</div>
+                  <div className="font-semibold text-gray-900">{selected.client}</div>
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Date *</label>
-                  <input 
-                    type="date" 
-                    className="w-full border rounded px-3 py-2 text-sm" 
-                    value={form.date} 
-                    onChange={e => setForm(f => ({ ...f, date: e.target.value }))} 
-                    required 
-                  />
+                  <div className="text-xs text-gray-400 mb-1">Amount</div>
+                  <div className="text-gray-700">{formatCurrency(selected.amount)}</div>
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Notes</label>
-                  <textarea className="w-full border rounded px-3 py-2 text-sm" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
+                  <div className="text-xs text-gray-400 mb-1">Type</div>
+                  <div className="flex items-center gap-1">
+                    {getPaymentTypeIcon(selected.type)}
+                    <span className="text-gray-700">{selected.type}</span>
+                  </div>
                 </div>
-                {formError && <div className="text-xs text-red-500">{formError}</div>}
-                <div className="flex justify-end gap-2 pt-2">
-                  <button type="button" className="px-4 py-2 rounded bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200 transition" onClick={() => { setShowAdd(false); setEditIndex(null); setForm({ ...emptyPayment }); }}>Cancel</button>
-                  <button type="submit" className="px-4 py-2 rounded bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition">{editIndex !== null ? 'Save Changes' : 'Record Payment'}</button>
+                <div>
+                  <div className="text-xs text-gray-400 mb-1">Status</div>
+                  <div className="flex items-center gap-1">
+                    {getStatusIcon(selected.status)}
+                    <span className="text-gray-700">{selected.status}</span>
+                  </div>
                 </div>
-              </form>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+                <div>
+                  <div className="text-xs text-gray-400 mb-1">Date</div>
+                  <div className="text-gray-500">{formatDate(selected.date)}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-gray-400 mb-1">Reference</div>
+                  <div className="text-gray-500">{selected.reference}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-gray-400 mb-1">Notes</div>
+                  <div className="text-gray-700">{selected.notes}</div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+          {showAdd && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/30"
+            >
+              <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8 relative">
+                <button onClick={() => { setShowAdd(false); setEditIndex(null); setForm({ ...emptyPayment }); }} className="absolute top-4 right-4 p-2 rounded hover:bg-gray-100">
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+                <div className="font-bold text-lg text-gray-900 mb-4">{editIndex !== null ? 'Edit Payment' : 'Record Payment'}</div>
+                <form className="space-y-4" onSubmit={handleAddPayment}>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Client *</label>
+                    <input className="w-full border rounded px-3 py-2 text-sm" value={form.client} onChange={e => setForm(f => ({ ...f, client: e.target.value }))} required />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Amount *</label>
+                    <input 
+                      type="number" 
+                      step="0.01" 
+                      min="0"
+                      className="w-full border rounded px-3 py-2 text-sm" 
+                      value={form.amount} 
+                      onChange={e => setForm(f => ({ ...f, amount: parseFloat(e.target.value) }))} 
+                      required 
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Type</label>
+                    <select className="w-full border rounded px-3 py-2 text-sm" value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))}>
+                      <option value="Credit Card">Credit Card</option>
+                      <option value="Bank Transfer">Bank Transfer</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Status</label>
+                    <select className="w-full border rounded px-3 py-2 text-sm" value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))}>
+                      <option value="Pending">Pending</option>
+                      <option value="Completed">Completed</option>
+                      <option value="Failed">Failed</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Date *</label>
+                    <input 
+                      type="date" 
+                      className="w-full border rounded px-3 py-2 text-sm" 
+                      value={form.date} 
+                      onChange={e => setForm(f => ({ ...f, date: e.target.value }))} 
+                      required 
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Notes</label>
+                    <textarea className="w-full border rounded px-3 py-2 text-sm" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
+                  </div>
+                  {formError && <div className="text-xs text-red-500">{formError}</div>}
+                  <div className="flex justify-end gap-2 pt-2">
+                    <button type="button" className="px-4 py-2 rounded bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200 transition" onClick={() => { setShowAdd(false); setEditIndex(null); setForm({ ...emptyPayment }); }}>Cancel</button>
+                    <button type="submit" className="px-4 py-2 rounded bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition">{editIndex !== null ? 'Save Changes' : 'Record Payment'}</button>
+                  </div>
+                </form>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
+    </AnimatePresence>
   );
 } 
