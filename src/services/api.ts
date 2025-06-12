@@ -1,63 +1,195 @@
-import axios from 'axios';
-import { AUTH } from '../config/constants';
+import { environment } from '../config/environment';
+import { cache } from '../utils/cache';
+import { logger } from '../utils/logger';
+import { monitoring } from '../utils/monitoring';
 
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
+interface RequestOptions {
+  method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+  body?: any;
+  headers?: Record<string, string>;
+  useCache?: boolean;
+  cacheTTL?: number;
+  retryOnError?: boolean;
+}
 
-// Request interceptor
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem(AUTH.TOKEN_KEY);
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
+interface ApiResponse<T> {
+  data: T;
+  status: number;
+  headers: Headers;
+}
+
+class ApiService {
+  private static instance: ApiService;
+  private baseUrl: string;
+
+  private constructor() {
+    this.baseUrl = environment.apiUrl;
   }
-);
 
-// Response interceptor
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    const originalRequest = error.config;
+  public static getInstance(): ApiService {
+    if (!ApiService.instance) {
+      ApiService.instance = new ApiService();
+    }
+    return ApiService.instance;
+  }
 
-    // Handle token refresh
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
+  private async fetchWithRetry(
+    url: string,
+    options: RequestOptions,
+    retryCount = 0
+  ): Promise<Response> {
+    try {
+      const response = await fetch(url, {
+        method: options.method || 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          ...options.headers,
+        },
+        body: options.body ? JSON.stringify(options.body) : undefined,
+      });
 
-      try {
-        const refreshToken = localStorage.getItem(AUTH.REFRESH_TOKEN_KEY);
-        if (!refreshToken) {
-          throw new Error('No refresh token available');
-        }
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
-        const response = await api.post(AUTH.REFRESH_TOKEN, {
-          refreshToken,
+      return response;
+    } catch (error) {
+      if (
+        options.retryOnError !== false &&
+        retryCount < environment.maxRetries
+      ) {
+        const delay = Math.pow(2, retryCount) * 1000; // Exponential backoff
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        return this.fetchWithRetry(url, options, retryCount + 1);
+      }
+      throw error;
+    }
+  }
+
+  private getCacheKey(url: string, options: RequestOptions): string {
+    const method = options.method || 'GET';
+    const body = options.body ? JSON.stringify(options.body) : '';
+    return `${method}:${url}:${body}`;
+  }
+
+  public async request<T>(
+    endpoint: string,
+    options: RequestOptions = {}
+  ): Promise<ApiResponse<T>> {
+    const url = `${this.baseUrl}${endpoint}`;
+    const startTime = performance.now();
+
+    try {
+      // Check cache for GET requests
+      if (options.method === 'GET' && options.useCache !== false) {
+        const cacheKey = this.getCacheKey(url, options);
+        const cachedData = await cache.get<T>(cacheKey, {
+          ttl: options.cacheTTL || environment.cacheTTL,
         });
 
-        const { token } = response.data;
-        localStorage.setItem(AUTH.TOKEN_KEY, token);
-
-        originalRequest.headers.Authorization = `Bearer ${token}`;
-        return api(originalRequest);
-      } catch (refreshError) {
-        // Handle refresh token failure
-        localStorage.removeItem(AUTH.TOKEN_KEY);
-        localStorage.removeItem(AUTH.REFRESH_TOKEN_KEY);
-        window.location.href = '/login';
-        return Promise.reject(refreshError);
+        if (cachedData) {
+          monitoring.recordMetric({
+            name: 'cache_hit',
+            value: 1,
+            tags: { endpoint },
+          });
+          return {
+            data: cachedData,
+            status: 200,
+            headers: new Headers(),
+          };
+        }
       }
+
+      // Make the request
+      const response = await this.fetchWithRetry(url, options);
+      const data = await response.json();
+
+      // Cache GET responses
+      if (options.method === 'GET' && options.useCache !== false) {
+        const cacheKey = this.getCacheKey(url, options);
+        await cache.set(cacheKey, data, {
+          ttl: options.cacheTTL || environment.cacheTTL,
+        });
+      }
+
+      // Record metrics
+      const duration = performance.now() - startTime;
+      monitoring.recordMetric({
+        name: 'api_request_duration',
+        value: duration,
+        tags: { endpoint, method: options.method || 'GET' },
+      });
+
+      return {
+        data,
+        status: response.status,
+        headers: response.headers,
+      };
+    } catch (error) {
+      // Record error
+      monitoring.reportError({
+        error: error instanceof Error ? error : new Error(String(error)),
+        context: {
+          url,
+          method: options.method || 'GET',
+          retryCount: options.retryOnError !== false ? environment.maxRetries : 0,
+        },
+      });
+
+      throw error;
     }
-
-    return Promise.reject(error);
   }
-);
 
-export { api }; 
+  public async get<T>(
+    endpoint: string,
+    options: Omit<RequestOptions, 'method'> = {}
+  ): Promise<ApiResponse<T>> {
+    return this.request<T>(endpoint, { ...options, method: 'GET' });
+  }
+
+  public async post<T>(
+    endpoint: string,
+    data: any,
+    options: Omit<RequestOptions, 'method' | 'body'> = {}
+  ): Promise<ApiResponse<T>> {
+    return this.request<T>(endpoint, {
+      ...options,
+      method: 'POST',
+      body: data,
+    });
+  }
+
+  public async put<T>(
+    endpoint: string,
+    data: any,
+    options: Omit<RequestOptions, 'method' | 'body'> = {}
+  ): Promise<ApiResponse<T>> {
+    return this.request<T>(endpoint, {
+      ...options,
+      method: 'PUT',
+      body: data,
+    });
+  }
+
+  public async patch<T>(
+    endpoint: string,
+    data: any,
+    options: Omit<RequestOptions, 'method' | 'body'> = {}
+  ): Promise<ApiResponse<T>> {
+    return this.request<T>(endpoint, {
+      ...options,
+      method: 'PATCH',
+      body: data,
+    });
+  }
+
+  public async delete<T>(
+    endpoint: string,
+    options: Omit<RequestOptions, 'method'> = {}
+  ): Promise<ApiResponse<T>> {
+    return this.request<T>(endpoint, { ...options, method: 'DELETE' });
+  }
+}
+
+export const api = ApiService.getInstance(); 

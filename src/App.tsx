@@ -27,6 +27,12 @@ import { useLocation } from 'react-router-dom';
 import AdminPanel from './AdminPanel';
 import { AuthProvider } from './contexts/AuthContext';
 import { InviteProvider } from './contexts/InviteContext';
+import PrivacyPolicy from './pages/legal/PrivacyPolicy';
+import CookiePolicy from './pages/legal/CookiePolicy';
+import TermsOfService from './pages/legal/TermsOfService';
+import GDPRCompliance from './components/legal/GDPRCompliance';
+import Footer from './components/layout/Footer';
+import CookieConsentBanner from './components/legal/CookieConsentBanner';
 
 // Loading component
 const LoadingSpinner = () => (
@@ -42,15 +48,17 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   const [showHelp, setShowHelp] = useState(false);
   
   return (
-    <div className="flex h-screen bg-gray-50">
-      <Sidebar />
-      <div className="flex-1 flex flex-col">
-        <Topbar onHelpClick={() => setShowHelp(true)} onQuickStartClick={() => setShowQuickStart(true)} />
-        <main className="flex-1 overflow-y-auto p-6 dashboard-main">
-          {children}
-        </main>
+    <div className="flex flex-col min-h-screen bg-gray-50">
+      <div className="flex flex-1">
+        <Sidebar />
+        <div className="flex-1 flex flex-col">
+          <Topbar onHelpClick={() => setShowHelp(true)} onQuickStartClick={() => setShowQuickStart(true)} />
+          <main className="flex-1 overflow-y-auto p-6 dashboard-main">
+            {children}
+          </main>
+        </div>
       </div>
-      
+      <Footer />
       <QuickStartGuide isOpen={showQuickStart} onClose={() => setShowQuickStart(false)} />
       <HelpDocumentation isOpen={showHelp} onClose={() => setShowHelp(false)} />
     </div>
@@ -108,7 +116,12 @@ export default function App() {
               <Route path="/invoices" element={<ProtectedRoute><Invoices /></ProtectedRoute>} />
               <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
               <Route path="/admin" element={<AdminPanel />} />
+              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+              <Route path="/cookie-policy" element={<CookiePolicy />} />
+              <Route path="/terms-of-service" element={<TermsOfService />} />
+              <Route path="/gdpr" element={<GDPRCompliance />} />
             </Routes>
+            <CookieConsentBanner />
           </Suspense>
         </OnboardingProvider>
       </AuthProvider>

@@ -1,37 +1,44 @@
 import { Request, Response, NextFunction } from 'express';
-import { verifyJwt } from './jwt';
-import { PrismaClient } from '@prisma/client';
-import jwt from 'jsonwebtoken';
+import { verifyToken } from './utils';
+import { MFAService } from './services/mfaService';
+import logger from '../../config/logger';
 
-const prisma = new PrismaClient();
-
+// Extend Express Request type to include user
 export interface AuthRequest extends Request {
-  user?: any;
+  user?: {
+    userId: number;
+  };
 }
 
-export async function requireAuth(req: AuthRequest, res: Response, next: NextFunction) {
-  const auth = req.headers.authorization;
-  if (!auth || !auth.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Missing or invalid Authorization header' });
-  }
-  const token = auth.replace('Bearer ', '');
+// Authentication middleware
+export const authenticate = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const payload = verifyJwt(token);
-    req.user = payload;
-    // Update lastActive for session if x-session-id is present
-    const sessionId = req.headers['x-session-id'];
-    let userId: string | undefined;
-    if (typeof payload === 'object' && 'userId' in payload) {
-      userId = (payload as any).userId;
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader) {
+      return res.status(401).json({ error: 'No authorization header' });
     }
-    if (sessionId && typeof sessionId === 'string' && userId) {
-      await prisma.session.updateMany({
-        where: { id: sessionId, userId, status: 'active' },
-        data: { lastActive: new Date() },
-      });
+
+    const token = authHeader.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({ error: 'No token provided' });
     }
+
+    const { userId } = verifyToken(token);
+    req.user = { userId };
+
+    // Check if MFA is required
+    const mfaEnabled = await MFAService.isMFAEnabled(userId);
+    if (mfaEnabled) {
+      const mfaVerified = req.headers['x-mfa-verified'] === 'true';
+      if (!mfaVerified) {
+        return res.status(403).json({ error: 'MFA verification required' });
+      }
+    }
+
     next();
-  } catch (err) {
-    return res.status(401).json({ error: 'Invalid or expired token' });
+  } catch (error) {
+    logger.error('Authentication error:', error);
+    res.status(401).json({ error: 'Invalid token' });
   }
-} 
+}; 

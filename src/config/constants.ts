@@ -24,6 +24,11 @@ export const ROUTES = {
   CREDIT_TOOLS: '/credit-tools',
   LETTER_TEMPLATES: '/letter-templates',
   INVOICES: '/invoices',
+  // Legal routes
+  PRIVACY_POLICY: '/privacy-policy',
+  COOKIE_POLICY: '/cookie-policy',
+  TERMS_OF_SERVICE: '/terms-of-service',
+  GDPR: '/gdpr',
 } as const;
 
 // Auth Constants
