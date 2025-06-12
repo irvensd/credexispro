@@ -1,177 +1,286 @@
-import { useSelector, useDispatch } from 'react-redux';
-import type { RootState } from '../types/store';
-import {
-  loginStart,
-  loginSuccess,
-  loginFailure,
-  logout,
-  updateUser,
-  refreshTokenStart,
-  refreshTokenSuccess,
-  refreshTokenFailure,
-  requestPasswordReset,
-  requestPasswordResetSuccess,
-  requestPasswordResetFailure,
-  verifyEmailStart,
-  verifyEmailSuccess,
-  verifyEmailFailure,
-  testUser,
-  testToken,
-  testRefreshToken,
-} from '../store/features/authSlice';
-import { API_ENDPOINTS } from '../config/constants';
+import { useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { api } from '../services/api';
+import { cache } from '../utils/cache';
+import { logger } from '../utils/logger';
+import { monitoring } from '../utils/monitoring';
+import { useDispatch } from 'react-redux';
+import { loginSuccess } from '../store/slices/authSlice';
+import type { User } from '../types/store';
+
+interface AuthState {
+  user: User | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  error: string | null;
+}
+
+interface LoginCredentials {
+  email: string;
+  password: string;
+}
+
+interface RegisterData extends LoginCredentials {
+  name: string;
+}
+
+const AUTH_TOKEN_KEY = 'auth_token';
+const AUTH_REFRESH_TOKEN_KEY = 'auth_refresh_token';
+const AUTH_USER_KEY = 'auth_user';
 
 export const useAuth = () => {
+  const navigate = useNavigate();
   const dispatch = useDispatch();
-  const auth = useSelector((state: RootState) => state.auth);
+  const [state, setState] = useState<AuthState>({
+    user: null,
+    isAuthenticated: false,
+    isLoading: true,
+    error: null,
+  });
 
-  const login = async (email: string, password: string) => {
+  const loadStoredAuth = useCallback(async () => {
     try {
-      dispatch(loginStart());
-      
-      // For development/testing purposes
-      if (email === 'test@credexis.com' && password === 'test123') {
-        dispatch(loginSuccess({ user: testUser, token: testToken, refreshToken: testRefreshToken }));
+      const token = localStorage.getItem(AUTH_TOKEN_KEY);
+      const user = await cache.get<User>(AUTH_USER_KEY);
+
+      if (token && user) {
+        setState({
+          user,
+          isAuthenticated: true,
+          isLoading: false,
+          error: null,
+        });
+      } else {
+        setState({
+          user: null,
+          isAuthenticated: false,
+          isLoading: false,
+          error: null,
+        });
+      }
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.error('Failed to load stored auth', new Error(errorMessage), { action: 'loadStoredAuth' });
+      setState({
+        user: null,
+        isAuthenticated: false,
+        isLoading: false,
+        error: 'Failed to load authentication state',
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    loadStoredAuth();
+  }, [loadStoredAuth]);
+
+  const login = useCallback(
+    async (credentials: LoginCredentials) => {
+      setState((prev) => ({ ...prev, isLoading: true, error: null }));
+
+      // Only allow test login in development
+      if (
+        process.env.NODE_ENV === 'development' &&
+        credentials.email === 'test@credexis.com' &&
+        credentials.password === 'test123'
+      ) {
+        const user = {
+          id: '1',
+          email: 'test@credexis.com',
+          name: 'Test User',
+          role: 'admin' as const,
+          emailVerified: true,
+        };
+        localStorage.setItem(AUTH_TOKEN_KEY, 'test-token');
+        localStorage.setItem(AUTH_REFRESH_TOKEN_KEY, 'test-refresh-token');
+        await cache.set(AUTH_USER_KEY, user);
+
+        // Update Redux state
+        dispatch(loginSuccess({
+          user,
+          token: 'test-token',
+          refreshToken: 'test-refresh-token',
+        }));
+
+        setState({
+          user,
+          isAuthenticated: true,
+          isLoading: false,
+          error: null,
+        });
+
+        monitoring.recordInteraction({
+          type: 'login',
+          target: 'auth',
+          timestamp: Date.now(),
+          metadata: { userId: user.id },
+        });
+
+        navigate('/dashboard');
         return;
       }
 
-      const response = await fetch(API_ENDPOINTS.AUTH.LOGIN, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
+      try {
+        const response = await api.post<{ token: string; refreshToken: string; user: User }>(
+          '/auth/login',
+          credentials
+        );
 
-      if (!response.ok) {
-        throw new Error('Login failed');
+        const { token, refreshToken, user } = response.data;
+
+        localStorage.setItem(AUTH_TOKEN_KEY, token);
+        localStorage.setItem(AUTH_REFRESH_TOKEN_KEY, refreshToken);
+        await cache.set(AUTH_USER_KEY, user);
+
+        setState({
+          user,
+          isAuthenticated: true,
+          isLoading: false,
+          error: null,
+        });
+
+        monitoring.recordInteraction({
+          type: 'login',
+          target: 'auth',
+          timestamp: Date.now(),
+          metadata: { userId: user.id },
+        });
+
+        navigate('/dashboard');
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Login failed';
+        setState((prev) => ({
+          ...prev,
+          isLoading: false,
+          error: errorMessage,
+        }));
+
+        monitoring.reportError({
+          error: error instanceof Error ? error : new Error(errorMessage),
+          context: { action: 'login' },
+        });
+
+        logger.error('Login failed', new Error(errorMessage), { action: 'login' });
       }
+    },
+    [navigate, dispatch]
+  );
 
-      const data = await response.json();
-      dispatch(loginSuccess(data));
-    } catch (error) {
-      dispatch(loginFailure(error instanceof Error ? error.message : 'Login failed'));
-      throw error;
-    }
-  };
+  const register = useCallback(
+    async (data: RegisterData) => {
+      setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
-  const logoutUser = () => {
-    dispatch(logout());
-  };
+      try {
+        const response = await api.post<{ token: string; refreshToken: string; user: User }>(
+          '/auth/register',
+          data
+        );
 
-  const updateUserProfile = (userData: RootState['auth']['user']) => {
-    if (userData) {
-      dispatch(updateUser(userData));
-    }
-  };
+        const { token, refreshToken, user } = response.data;
 
-  const refreshToken = async () => {
+        localStorage.setItem(AUTH_TOKEN_KEY, token);
+        localStorage.setItem(AUTH_REFRESH_TOKEN_KEY, refreshToken);
+        await cache.set(AUTH_USER_KEY, user);
+
+        setState({
+          user,
+          isAuthenticated: true,
+          isLoading: false,
+          error: null,
+        });
+
+        monitoring.recordInteraction({
+          type: 'register',
+          target: 'auth',
+          timestamp: Date.now(),
+          metadata: { userId: user.id },
+        });
+
+        navigate('/dashboard');
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Registration failed';
+        setState((prev) => ({
+          ...prev,
+          isLoading: false,
+          error: errorMessage,
+        }));
+
+        monitoring.reportError({
+          error: error instanceof Error ? error : new Error(errorMessage),
+          context: { action: 'register' },
+        });
+
+        logger.error('Registration failed', new Error(errorMessage), { action: 'register' });
+      }
+    },
+    [navigate]
+  );
+
+  const logout = useCallback(async () => {
     try {
-      dispatch(refreshTokenStart());
-      
-      const response = await fetch(API_ENDPOINTS.AUTH.REFRESH_TOKEN, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ refreshToken: auth.refreshToken }),
+      await api.post('/auth/logout', {});
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.error('Logout request failed', new Error(errorMessage), { action: 'logout' });
+    } finally {
+      localStorage.removeItem(AUTH_TOKEN_KEY);
+      localStorage.removeItem(AUTH_REFRESH_TOKEN_KEY);
+      await cache.delete(AUTH_USER_KEY);
+
+      setState({
+        user: null,
+        isAuthenticated: false,
+        isLoading: false,
+        error: null,
       });
 
-      if (!response.ok) {
-        throw new Error('Token refresh failed');
-      }
+      monitoring.recordInteraction({
+        type: 'logout',
+        target: 'auth',
+        timestamp: Date.now(),
+      });
 
-      const data = await response.json();
-      dispatch(refreshTokenSuccess(data));
-    } catch (error) {
-      dispatch(refreshTokenFailure(error instanceof Error ? error.message : 'Token refresh failed'));
-      throw error;
+      navigate('/login');
     }
-  };
+  }, [navigate]);
 
-  const requestPasswordReset = async (email: string) => {
+  const refreshToken = useCallback(async () => {
     try {
-      dispatch(requestPasswordReset());
-      
-      const response = await fetch(API_ENDPOINTS.AUTH.FORGOT_PASSWORD, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Password reset request failed');
+      const refreshToken = localStorage.getItem(AUTH_REFRESH_TOKEN_KEY);
+      if (!refreshToken) {
+        throw new Error('No refresh token available');
       }
 
-      dispatch(requestPasswordResetSuccess());
-    } catch (error) {
-      dispatch(requestPasswordResetFailure(error instanceof Error ? error.message : 'Password reset request failed'));
-      throw error;
-    }
-  };
-
-  const resetPassword = async (token: string, password: string) => {
-    try {
-      dispatch(loginStart());
-      
-      const response = await fetch(API_ENDPOINTS.AUTH.RESET_PASSWORD, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ token, password }),
+      const response = await api.post<{ token: string; user: User }>('/auth/refresh', {
+        refreshToken,
       });
 
-      if (!response.ok) {
-        throw new Error('Password reset failed');
-      }
+      const { token, user } = response.data;
 
-      const data = await response.json();
-      dispatch(loginSuccess(data));
-    } catch (error) {
-      dispatch(loginFailure(error instanceof Error ? error.message : 'Password reset failed'));
-      throw error;
+      localStorage.setItem(AUTH_TOKEN_KEY, token);
+      await cache.set(AUTH_USER_KEY, user);
+
+      setState((prev) => ({
+        ...prev,
+        user,
+        isAuthenticated: true,
+      }));
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.error('Token refresh failed', new Error(errorMessage), { action: 'refreshToken' });
+      await logout();
     }
-  };
+  }, [logout]);
 
-  const verifyEmail = async (token: string) => {
-    try {
-      dispatch(verifyEmailStart());
-      
-      const response = await fetch(API_ENDPOINTS.AUTH.VERIFY_EMAIL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ token }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Email verification failed');
-      }
-
-      dispatch(verifyEmailSuccess());
-    } catch (error) {
-      dispatch(verifyEmailFailure(error instanceof Error ? error.message : 'Email verification failed'));
-      throw error;
-    }
-  };
+  // Add a flag to indicate if test login is available
+  const isTestLoginAvailable = process.env.NODE_ENV === 'development';
 
   return {
-    user: auth.user,
-    isAuthenticated: auth.isAuthenticated,
-    loading: auth.loading,
-    error: auth.error,
-    emailVerified: auth.emailVerified,
-    passwordResetRequested: auth.passwordResetRequested,
+    ...state,
     login,
-    logout: logoutUser,
-    updateUser: updateUserProfile,
+    register,
+    logout,
     refreshToken,
-    requestPasswordReset,
-    resetPassword,
-    verifyEmail,
+    isTestLoginAvailable,
   };
 }; 
