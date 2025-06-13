@@ -129,7 +129,7 @@ export default function Topbar({ onHelpClick, onQuickStartClick, userData }: Top
                   {userData ? `${userData.firstName || ''} ${userData.lastName || ''}`.trim() : user?.email || 'User'}
                 </span>
                 <span className="w-9 h-9 bg-indigo-200 rounded-full flex items-center justify-center font-bold text-indigo-700 ring-2 ring-indigo-400">
-                  {userData && userData.firstName ? userData.firstName[0] : (user?.email ? user.email[0] : 'U')}
+                  {userData && userData.firstName ? userData.firstName[0].toUpperCase() : (userData && userData.email ? userData.email[0].toUpperCase() : 'U')}
                 </span>
                 <ChevronDown
                   className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${

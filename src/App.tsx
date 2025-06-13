@@ -121,15 +121,17 @@ export default function App() {
         const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
         console.log('User doc exists:', userDoc.exists());
         if (userDoc.exists()) {
+          const userData = userDoc.data();
           dispatch(loginSuccess({
             user: {
-              id: '1',
-              email: 'test@example.com',
-              name: 'Test User',
-              role: 'admin',
-              emailVerified: true,
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString()
+              id: firebaseUser.uid,
+              email: firebaseUser.email || '',
+              name: userData.name || ((userData.firstName || '') + ' ' + (userData.lastName || '')),
+              role: userData.role || 'user',
+              emailVerified: firebaseUser.emailVerified,
+              createdAt: userData.createdAt || new Date().toISOString(),
+              updatedAt: userData.updatedAt || new Date().toISOString(),
+              // Add any other fields you need from userData
             },
             token: 'firebase',
             refreshToken: '',
