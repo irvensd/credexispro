@@ -49,9 +49,9 @@ export const helmetConfig = {
   },
   crossOriginEmbedderPolicy: true,
   crossOriginOpenerPolicy: true,
-  crossOriginResourcePolicy: { policy: 'same-site' },
+  crossOriginResourcePolicy: true,
   dnsPrefetchControl: { allow: false },
-  frameguard: { action: 'deny' },
+  frameguard: { action: 'deny' as const },
   hidePoweredBy: true,
   hsts: {
     maxAge: 31536000,
@@ -60,7 +60,7 @@ export const helmetConfig = {
   },
   ieNoOpen: true,
   noSniff: true,
-  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+  referrerPolicy: true,
   xssFilter: true,
 };
 
@@ -114,7 +114,7 @@ export const validateApiKey = (req: Request, res: Response, next: NextFunction) 
 // IP whitelist middleware
 export const ipWhitelist = (req: Request, res: Response, next: NextFunction) => {
   const allowedIPs = process.env.ALLOWED_IPS?.split(',') || [];
-  const clientIP = req.ip;
+  const clientIP = req.ip || '';
   
   if (allowedIPs.length > 0 && !allowedIPs.includes(clientIP)) {
     return res.status(403).json({ error: 'IP not allowed' });

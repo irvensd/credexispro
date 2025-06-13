@@ -9,18 +9,15 @@ import type { Client } from './types/Client';
 const Clients: React.FC = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { clients, loading, error } = useClients();
+  const { clients } = useClients();
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
-  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
 
   const filteredClients = clients.filter(client => 
-    client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    client.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    client.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
     client.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
-  const activeClients = clients.filter(c => c.status === 'active').length;
-  const inactiveClients = clients.filter(c => c.status === 'inactive').length;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -54,11 +51,11 @@ const Clients: React.FC = () => {
             onClick={() => navigate(`/clients/${client.id}`)}
             className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow cursor-pointer"
           >
-            <h3 className="font-semibold text-lg">{client.name}</h3>
+            <h3 className="font-semibold text-lg">{client.firstName} {client.lastName}</h3>
             <p className="text-gray-600">{client.email}</p>
             <span className={`inline-block px-2 py-1 rounded text-sm ${
-              client.status === 'active' ? 'bg-green-100 text-green-800' :
-              client.status === 'inactive' ? 'bg-yellow-100 text-yellow-800' :
+              client.status === 'Active' ? 'bg-green-100 text-green-800' :
+              client.status === 'Inactive' ? 'bg-yellow-100 text-yellow-800' :
               'bg-gray-100 text-gray-800'
             }`}>
               {client.status}

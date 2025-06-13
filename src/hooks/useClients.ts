@@ -1,5 +1,5 @@
 import { useDispatch, useSelector } from 'react-redux';
-import type { AppDispatch, RootState } from '../store';
+import type { RootState } from '../store';
 import {
   setClients,
   addClient,
@@ -9,7 +9,6 @@ import {
   setLoading,
   setError
 } from '../store/slices/clientsSlice';
-import type { Client } from '../types/store';
 
 export const useClients = () => {
   const dispatch = useDispatch();

@@ -28,6 +28,16 @@ export default function Layout({ children }: LayoutProps) {
     setIsSidebarOpen(!isSidebarOpen);
   };
 
+  const handleHelpClick = () => {
+    // TODO: Implement help click handler
+    console.log('Help clicked');
+  };
+
+  const handleQuickStartClick = () => {
+    // TODO: Implement quick start click handler
+    console.log('Quick start clicked');
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Mobile Sidebar Toggle */}
@@ -60,7 +70,7 @@ export default function Layout({ children }: LayoutProps) {
           isMobile ? 'ml-0' : 'ml-64'
         }`}
       >
-        <Topbar />
+        <Topbar onHelpClick={handleHelpClick} onQuickStartClick={handleQuickStartClick} />
         <main className="p-4 sm:p-6 lg:p-8">
           <div className="max-w-7xl mx-auto">
             {children}

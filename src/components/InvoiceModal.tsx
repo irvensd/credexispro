@@ -15,7 +15,8 @@ const statusOptions = ['Draft', 'Sent', 'Paid', 'Overdue', 'Cancelled'] as const
 
 const InvoiceModal: React.FC<InvoiceModalProps> = ({ isOpen, onClose, onSubmit, clients, invoice, readOnly }) => {
   const [form, setForm] = useState<Partial<Invoice>>({
-    clientId: clients[0]?.id,
+    id: invoice?.id,
+    clientId: clients[0]?.id ? Number(clients[0].id) : undefined,
     issueDate: new Date().toISOString().slice(0, 10),
     dueDate: '',
     status: 'Draft',
@@ -27,7 +28,8 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({ isOpen, onClose, onSubmit, 
   useEffect(() => {
     if (invoice) setForm(invoice);
     else setForm({
-      clientId: clients[0]?.id,
+      id: undefined,
+      clientId: clients[0]?.id ? Number(clients[0].id) : undefined,
       issueDate: new Date().toISOString().slice(0, 10),
       dueDate: '',
       status: 'Draft',

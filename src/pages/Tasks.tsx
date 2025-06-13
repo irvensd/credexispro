@@ -29,9 +29,11 @@ interface CalendarEvent extends Event {
 
 const statusSegments = [
   { label: 'All', value: '' },
-  { label: 'Pending', value: 'pending' },
+  { label: 'Todo', value: 'todo' },
   { label: 'In Progress', value: 'in_progress' },
+  { label: 'Review', value: 'review' },
   { label: 'Completed', value: 'completed' },
+  { label: 'Blocked', value: 'blocked' },
 ];
 
 const Tasks: React.FC = () => {
@@ -227,8 +229,9 @@ const Tasks: React.FC = () => {
                           <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-semibold ${
                             task.status === 'completed' ? 'bg-green-100 text-green-800' :
                             task.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
-                            task.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-gray-100 text-gray-800'
+                            task.status === 'review' ? 'bg-purple-100 text-purple-800' :
+                            task.status === 'blocked' ? 'bg-red-100 text-red-800' :
+                            'bg-yellow-100 text-yellow-800'
                           }`}>
                             {task.status}
                           </span>

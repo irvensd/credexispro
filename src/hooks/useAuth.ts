@@ -90,6 +90,8 @@ export const useAuth = () => {
           name: 'Test User',
           role: 'admin' as const,
           emailVerified: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
         };
         localStorage.setItem(AUTH_TOKEN_KEY, 'test-token');
         localStorage.setItem(AUTH_REFRESH_TOKEN_KEY, 'test-refresh-token');

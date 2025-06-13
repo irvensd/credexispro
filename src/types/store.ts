@@ -1,4 +1,4 @@
-import type { Task, TaskTemplate, TaskFilter } from './task';
+import type { Task, TaskTemplate, TaskFilter, TaskStatus, TaskPriority } from './task';
 
 export interface User {
   id: string;
@@ -61,8 +61,8 @@ export interface TaskState {
   loading: boolean;
   error: string | null;
   filters: {
-    status: string[];
-    priority: string[];
+    status: TaskStatus[];
+    priority: TaskPriority[];
     assignedTo: string[];
   };
 }
