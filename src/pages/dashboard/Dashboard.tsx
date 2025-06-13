@@ -1,10 +1,35 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import { Activity, BarChart2, Clock, Users } from 'lucide-react';
+import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
+import { db } from '../../firebase';
 
 const Dashboard: React.FC = () => {
   const user = useSelector((state: RootState) => state.auth.user);
+  const [totalUsers, setTotalUsers] = useState(0);
+  const [recentActivity, setRecentActivity] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      // Fetch total users
+      const usersSnapshot = await getDocs(collection(db, 'users'));
+      setTotalUsers(usersSnapshot.size);
+
+      // Fetch recent activity (last 5)
+      try {
+        const activityQuery = query(collection(db, 'activity'), orderBy('timestamp', 'desc'), limit(5));
+        const activitySnapshot = await getDocs(activityQuery);
+        setRecentActivity(activitySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      } catch (e) {
+        setRecentActivity([]);
+      }
+      setLoading(false);
+    };
+    fetchData();
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -24,7 +49,7 @@ const Dashboard: React.FC = () => {
             </div>
             <div>
               <p className="text-sm font-medium text-gray-500">Total Users</p>
-              <p className="text-2xl font-semibold text-gray-900">1,234</p>
+              <p className="text-2xl font-semibold text-gray-900">{loading ? '...' : totalUsers}</p>
             </div>
           </div>
         </div>
@@ -36,7 +61,7 @@ const Dashboard: React.FC = () => {
             </div>
             <div>
               <p className="text-sm font-medium text-gray-500">Active Sessions</p>
-              <p className="text-2xl font-semibold text-gray-900">42</p>
+              <p className="text-2xl font-semibold text-gray-900">0</p>
             </div>
           </div>
         </div>
@@ -48,7 +73,7 @@ const Dashboard: React.FC = () => {
             </div>
             <div>
               <p className="text-sm font-medium text-gray-500">Avg. Response Time</p>
-              <p className="text-2xl font-semibold text-gray-900">245ms</p>
+              <p className="text-2xl font-semibold text-gray-900">0ms</p>
             </div>
           </div>
         </div>
@@ -60,7 +85,7 @@ const Dashboard: React.FC = () => {
             </div>
             <div>
               <p className="text-sm font-medium text-gray-500">Success Rate</p>
-              <p className="text-2xl font-semibold text-gray-900">99.9%</p>
+              <p className="text-2xl font-semibold text-gray-900">0%</p>
             </div>
           </div>
         </div>
@@ -69,22 +94,20 @@ const Dashboard: React.FC = () => {
       {/* Recent Activity */}
       <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
         <h2 className="mb-4 text-lg font-semibold text-gray-900">Recent Activity</h2>
-        <div className="space-y-4">
-          {[1, 2, 3, 4, 5].map((item) => (
-            <div key={item} className="flex items-center justify-between border-b border-gray-100 pb-4 last:border-0 last:pb-0">
-              <div className="flex items-center space-x-3">
-                <div className="h-8 w-8 rounded-full bg-gray-100" />
-                <div>
-                  <p className="text-sm font-medium text-gray-900">User Action {item}</p>
-                  <p className="text-xs text-gray-500">2 hours ago</p>
-                </div>
-              </div>
-              <span className="rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-800">
-                Completed
-              </span>
-            </div>
+        {loading ? (
+          <div className="text-center text-gray-500 py-8">Loading...</div>
+        ) : recentActivity.length === 0 ? (
+          <div className="text-center text-gray-500 py-8">No recent activity to display</div>
+        ) : (
+          <ul className="divide-y divide-gray-100">
+            {recentActivity.map((activity) => (
+              <li key={activity.id} className="py-3 flex items-center justify-between">
+                <span className="text-gray-700">{activity.description || 'Activity'}</span>
+                <span className="text-xs text-gray-400">{activity.timestamp ? new Date(activity.timestamp.seconds * 1000).toLocaleString() : ''}</span>
+              </li>
           ))}
-        </div>
+          </ul>
+        )}
       </div>
     </div>
   );

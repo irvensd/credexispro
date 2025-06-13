@@ -23,11 +23,11 @@ const growthData12 = [
 export default function ClientGrowth() {
   const [range, setRange] = useState<'6m' | '1y'>('6m');
   const [loading, setLoading] = useState(true);
-  const [data, setData] = useState<typeof growthData6 | typeof growthData12>([]);
+  const [data, setData] = useState<any[]>([]);
 
   React.useEffect(() => {
     setTimeout(() => {
-      setData(range === '6m' ? growthData6 : growthData12); // Set to [] for empty state
+      setData([]); // Start with empty data
       setLoading(false);
     }, 1200);
   }, [range]);

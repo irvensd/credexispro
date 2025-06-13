@@ -26,54 +26,17 @@ ChartJS.register(
   ArcElement
 );
 
-// Mock data for analytics
-const mockData = {
-  overview: {
-    totalClients: 156,
-    activeDisputes: 89,
-    monthlyRevenue: 45600,
-    successRate: 78,
-  },
-  clientMetrics: {
-    newClients: 23,
-    activeClients: 134,
-    inactiveClients: 22,
-    averageScore: 680,
-  },
-  disputeMetrics: {
-    totalDisputes: 245,
-    resolvedDisputes: 189,
-    pendingDisputes: 56,
-    successRate: 78,
-  },
-  revenueMetrics: {
-    monthlyRevenue: 45600,
-    yearlyRevenue: 547200,
-    averageClientValue: 3500,
-    revenueGrowth: 15,
-  },
-  disputeTypes: {
-    creditCard: 45,
-    medical: 30,
-    student: 15,
-    other: 10,
-  },
-  scoreImprovements: {
-    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-    datasets: [
-      {
-        label: 'Average Score',
-        data: [620, 635, 645, 655, 670, 680],
-        borderColor: 'rgb(75, 192, 192)',
-        tension: 0.1,
-      },
-    ],
-  },
-};
-
 const Reports = () => {
   const [timeRange, setTimeRange] = useState('month');
   const [isLoading, setIsLoading] = useState(false);
+
+  // Initialize analytics state as empty or zeroed objects
+  const [overview, setOverview] = useState({ totalClients: 0, activeDisputes: 0, monthlyRevenue: 0, successRate: 0 });
+  const [clientMetrics, setClientMetrics] = useState({ newClients: 0, activeClients: 0, inactiveClients: 0, averageScore: 0 });
+  const [disputeMetrics, setDisputeMetrics] = useState({ totalDisputes: 0, resolvedDisputes: 0, pendingDisputes: 0, successRate: 0 });
+  const [revenueMetrics, setRevenueMetrics] = useState({ monthlyRevenue: 0, yearlyRevenue: 0, averageClientValue: 0, revenueGrowth: 0 });
+  const [disputeTypes, setDisputeTypes] = useState({ creditCard: 0, medical: 0, student: 0, other: 0 });
+  const [scoreImprovements, setScoreImprovements] = useState({ labels: [], datasets: [] });
 
   const handleExport = () => {
     // Implement export functionality
@@ -131,25 +94,25 @@ const Reports = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
         <MetricCard
           title="Total Clients"
-          value={mockData.overview.totalClients}
+          value={overview.totalClients}
           icon={Users}
           color="bg-blue-500"
         />
         <MetricCard
           title="Active Disputes"
-          value={mockData.overview.activeDisputes}
+          value={overview.activeDisputes}
           icon={AlertCircle}
           color="bg-yellow-500"
         />
         <MetricCard
           title="Monthly Revenue"
-          value={`$${mockData.overview.monthlyRevenue.toLocaleString()}`}
+          value={`$${overview.monthlyRevenue.toLocaleString()}`}
           icon={DollarSign}
           color="bg-green-500"
         />
         <MetricCard
           title="Success Rate"
-          value={`${mockData.overview.successRate}%`}
+          value={`${overview.successRate}%`}
           icon={TrendingUp}
           color="bg-purple-500"
         />
@@ -163,19 +126,19 @@ const Reports = () => {
           <div className="space-y-4">
             <div className="flex justify-between">
               <span className="text-gray-600">New Clients</span>
-              <span className="font-medium">{mockData.clientMetrics.newClients}</span>
+              <span className="font-medium">{clientMetrics.newClients}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Active Clients</span>
-              <span className="font-medium">{mockData.clientMetrics.activeClients}</span>
+              <span className="font-medium">{clientMetrics.activeClients}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Inactive Clients</span>
-              <span className="font-medium">{mockData.clientMetrics.inactiveClients}</span>
+              <span className="font-medium">{clientMetrics.inactiveClients}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Average Score</span>
-              <span className="font-medium">{mockData.clientMetrics.averageScore}</span>
+              <span className="font-medium">{clientMetrics.averageScore}</span>
             </div>
           </div>
         </div>
@@ -186,19 +149,19 @@ const Reports = () => {
           <div className="space-y-4">
             <div className="flex justify-between">
               <span className="text-gray-600">Total Disputes</span>
-              <span className="font-medium">{mockData.disputeMetrics.totalDisputes}</span>
+              <span className="font-medium">{disputeMetrics.totalDisputes}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Resolved Disputes</span>
-              <span className="font-medium">{mockData.disputeMetrics.resolvedDisputes}</span>
+              <span className="font-medium">{disputeMetrics.resolvedDisputes}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Pending Disputes</span>
-              <span className="font-medium">{mockData.disputeMetrics.pendingDisputes}</span>
+              <span className="font-medium">{disputeMetrics.pendingDisputes}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Success Rate</span>
-              <span className="font-medium">{mockData.disputeMetrics.successRate}%</span>
+              <span className="font-medium">{disputeMetrics.successRate}%</span>
             </div>
           </div>
         </div>
@@ -210,7 +173,7 @@ const Reports = () => {
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Score Improvements</h2>
           <div className="h-80">
-            <Line data={mockData.scoreImprovements} options={lineChartOptions} />
+            <Line data={scoreImprovements} options={lineChartOptions} />
           </div>
         </div>
 
@@ -224,10 +187,10 @@ const Reports = () => {
                 datasets: [
                   {
                     data: [
-                      mockData.disputeTypes.creditCard,
-                      mockData.disputeTypes.medical,
-                      mockData.disputeTypes.student,
-                      mockData.disputeTypes.other,
+                      disputeTypes.creditCard,
+                      disputeTypes.medical,
+                      disputeTypes.student,
+                      disputeTypes.other,
                     ],
                     backgroundColor: [
                       'rgb(54, 162, 235)',

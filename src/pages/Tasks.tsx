@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import type { Task } from '../types/task';
+import type { Task, TaskStatus, TaskPriority, TaskType } from '../types/task';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
 import type { Event } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import TaskModal from '../components/TaskModal';
 import type { Client } from '../types/Client';
+import { db } from '../firebase';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
+import { activityService } from '../services/activityService';
+import { useAuth } from '../contexts/AuthContext';
 
 const locales = {
   'en-US': require('date-fns/locale/en-US'),
@@ -31,93 +35,104 @@ const statusSegments = [
 ];
 
 const Tasks: React.FC = () => {
+  const { user } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
   const [view, setView] = useState<'list' | 'calendar'>('list');
   const [showNewTaskModal, setShowNewTaskModal] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | undefined>();
   const [filter, setFilter] = useState<{
-    status?: Task['status'];
-    priority?: Task['priority'];
-    type?: Task['type'];
+    status?: TaskStatus;
+    priority?: TaskPriority;
+    type?: TaskType;
   }>({});
   const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // TODO: Fetch tasks from API
-    // For now, using mock data
-    const mockTasks: Task[] = [
-      {
-        id: '1',
-        title: 'Client Meeting',
-        description: 'Discuss credit repair strategy',
-        dueDate: new Date().toISOString(),
-        priority: 'high',
-        status: 'pending',
-        type: 'general',
-        assignee: null,
-        dependencies: [],
-        comments: [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        createdBy: { id: '1', name: 'Admin', email: 'admin@example.com' },
-        tags: [],
-      },
-    ];
-    setTasks(mockTasks);
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        // Fetch tasks
+        const tasksSnapshot = await getDocs(collection(db, 'tasks'));
+        const tasksData = tasksSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as Task[];
+        setTasks(tasksData);
+
+        // Fetch clients
+        const clientsSnapshot = await getDocs(collection(db, 'clients'));
+        const clientsData = clientsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as Client[];
+        setClients(clientsData);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
   }, []);
 
-  const handleCreateTask = (taskData: Partial<Task>) => {
-    const newTask: Task = {
-      id: tasks.length + 1,
+  const handleCreateTask = async (taskData: Partial<Task>) => {
+    const newTask = {
+      ...taskData,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      ...taskData,
-    } as Task;
-    setTasks([...tasks, newTask]);
+    };
+    const docRef = await addDoc(collection(db, 'tasks'), newTask);
+    const createdTask = { ...newTask, id: docRef.id } as Task;
+    setTasks(prev => [...prev, createdTask]);
+    
+    // Log activity
+    await activityService.logTaskCreated(createdTask.title || 'Untitled Task', user?.id || '');
   };
 
-  const handleUpdateTask = (taskData: Partial<Task>) => {
+  const handleUpdateTask = async (taskData: Partial<Task>) => {
     if (!selectedTask) return;
-    const updatedTasks = tasks.map(task =>
-      task.id === selectedTask.id
-        ? { ...task, ...taskData, updatedAt: new Date().toISOString() }
-        : task
-    );
-    setTasks(updatedTasks);
+    const updatedTask = { ...selectedTask, ...taskData, updatedAt: new Date().toISOString() };
+    await updateDoc(doc(db, 'tasks', selectedTask.id), updatedTask);
+    setTasks(prev => prev.map(task => task.id === selectedTask.id ? updatedTask as Task : task));
+    
+    // Log activity if status changed to completed
+    if (taskData.status === 'completed' && selectedTask.status !== 'completed') {
+      await activityService.logTaskCompleted(updatedTask.title || 'Untitled Task', user?.id || '');
+    }
   };
 
-  const handleDeleteTask = (taskId: number) => {
-    setTasks(tasks.filter(task => task.id !== taskId));
+  const handleDeleteTask = async (taskId: string) => {
+    const taskToDelete = tasks.find(t => t.id === taskId);
+    if (!taskToDelete) return;
+    
+    await deleteDoc(doc(db, 'tasks', taskId));
+    setTasks(prev => prev.filter(task => task.id !== taskId));
+    
+    // Log activity for task deletion
+    await activityService.logActivity({
+      type: 'task_deleted',
+      description: `Deleted task: ${taskToDelete.title || 'Untitled Task'}`,
+      user: user?.id || ''
+    });
   };
 
-  // Mock clients for demo (replace with real data/fetch in production)
-  const clients: Client[] = [
-    { id: '1', firstName: 'John', lastName: 'Doe', email: '', phone: '', address: '', status: 'Active', creditScore: 0, goalScore: 0, joinDate: '', disputes: 0, progress: 0, nextAction: '', totalPaid: 0 },
-    { id: '2', firstName: 'Jane', lastName: 'Smith', email: '', phone: '', address: '', status: 'Active', creditScore: 0, goalScore: 0, joinDate: '', disputes: 0, progress: 0, nextAction: '', totalPaid: 0 },
-    { id: '3', firstName: 'Sarah', lastName: 'Lee', email: '', phone: '', address: '', status: 'Active', creditScore: 0, goalScore: 0, joinDate: '', disputes: 0, progress: 0, nextAction: '', totalPaid: 0 },
-    { id: '4', firstName: 'Mike', lastName: 'D', email: '', phone: '', address: '', status: 'Active', creditScore: 0, goalScore: 0, joinDate: '', disputes: 0, progress: 0, nextAction: '', totalPaid: 0 },
-  ];
-
-  // Enhanced filter logic
+  // Filter tasks based on search and filters
   const filteredTasks = tasks.filter(task => {
-    const client = clients.find(c => c.id === (task.assignee ? task.assignee.id : '1'));
-    const clientName = client ? `${client.firstName} ${client.lastName}` : '';
-    const matchesSearch =
-      task.title.toLowerCase().includes(search.toLowerCase()) ||
-      (task.type || '').toLowerCase().includes(search.toLowerCase()) ||
-      clientName.toLowerCase().includes(search.toLowerCase());
-    if (!matchesSearch) return false;
-    if (filter.status && task.status !== filter.status) return false;
-    if (filter.priority && task.priority !== filter.priority) return false;
-    if (filter.type && task.type !== filter.type) return false;
-    return true;
+    const matchesSearch = task.title?.toLowerCase().includes(search.toLowerCase()) || false;
+    const matchesStatus = !filter.status || task.status === filter.status;
+    const matchesPriority = !filter.priority || task.priority === filter.priority;
+    const matchesType = !filter.type || task.type === filter.type;
+    
+    return matchesSearch && matchesStatus && matchesPriority && matchesType;
   });
 
   const events: CalendarEvent[] = filteredTasks.map(task => ({
-    id: task.id,
+    id: String(task.id),
     title: task.title,
-    start: new Date(task.dueDate),
-    end: new Date(task.dueDate),
+    start: task.dueDate ? new Date(task.dueDate) : new Date(),
+    end: task.dueDate ? new Date(task.dueDate) : new Date(),
     resource: task,
   }));
 
@@ -166,7 +181,7 @@ const Tasks: React.FC = () => {
               {statusSegments.map(seg => (
                 <button
                   key={seg.value}
-                  onClick={() => setFilter({ ...filter, status: seg.value as Task['status'] })}
+                  onClick={() => setFilter({ ...filter, status: seg.value as TaskStatus })}
                   className={`px-4 py-2 rounded font-medium ${filter.status === seg.value || (!filter.status && !seg.value) ? 'bg-primary text-white' : 'bg-gray-100 text-gray-700'}`}
                 >
                   {seg.label}
@@ -175,68 +190,76 @@ const Tasks: React.FC = () => {
             </div>
           </div>
           <div className="bg-white rounded-xl shadow p-0.5">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead>
-                <tr className="h-12">
-                  <th className="px-4 py-2 flex items-center">
-                    <input type="checkbox" className="w-5 h-5" style={{ verticalAlign: 'middle' }} />
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-100">
-                {filteredTasks.map(task => {
-                  const client = clients.find(c => c.id === (task.assignee ? task.assignee.id : '1'));
-                  return (
-                    <tr key={task.id} className="h-12 hover:bg-gray-50">
-                      <td className="px-4 py-2 flex items-center">
-                        <input type="checkbox" className="w-5 h-5" style={{ verticalAlign: 'middle' }} />
-                      </td>
-                      <td className="px-4 py-2 font-medium text-gray-900 flex items-center">{task.title}</td>
-                      <td className="px-4 py-2 text-gray-700 flex items-center">{task.type}</td>
-                      <td className="px-4 py-2 text-gray-700 flex items-center">{client ? `${client.firstName} ${client.lastName}` : ''}</td>
-                      <td className="px-4 py-2 flex items-center">
-                        <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-semibold ${
-                          task.status === 'completed' ? 'bg-green-100 text-green-800' :
-                          task.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
-                          task.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
-                          {task.status}
-                        </span>
-                      </td>
-                      <td className="px-4 py-2 flex items-center">
-                        <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-semibold ${
-                          task.priority === 'high' ? 'bg-red-100 text-red-800' :
-                          task.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
-                          {task.priority}
-                        </span>
-                      </td>
-                      <td className="px-4 py-2 text-gray-700 flex items-center">{task.dueDate ? new Date(task.dueDate).toLocaleDateString() : ''}</td>
-                      <td className="px-4 py-2 flex items-center space-x-2">
-                        <button className="text-indigo-500 hover:text-indigo-700" title="View">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                        </button>
-                        <button onClick={() => { setSelectedTask(task); setShowNewTaskModal(true); }} className="text-blue-500 hover:text-blue-700" title="Edit">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5h2m2 0h.01M17 5a2 2 0 012 2v10a2 2 0 01-2 2H7a2 2 0 01-2-2V7a2 2 0 012-2h1" /></svg>
-                        </button>
-                        <button onClick={() => handleDeleteTask(task.id)} className="text-red-500 hover:text-red-700" title="Delete">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+            {loading ? (
+              <div className="text-center py-8 text-gray-500">Loading...</div>
+            ) : filteredTasks.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                No tasks found. Create a new task to get started.
+              </div>
+            ) : (
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead>
+                  <tr className="h-12">
+                    <th className="px-4 py-2 flex items-center">
+                      <input type="checkbox" className="w-5 h-5" style={{ verticalAlign: 'middle' }} />
+                    </th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-100">
+                  {filteredTasks.map(task => {
+                    const client = clients.find(c => c.id === (task.assignee && task.assignee.id ? task.assignee.id : ''));
+                    return (
+                      <tr key={task.id} className="h-12 hover:bg-gray-50">
+                        <td className="px-4 py-2 flex items-center">
+                          <input type="checkbox" className="w-5 h-5" style={{ verticalAlign: 'middle' }} />
+                        </td>
+                        <td className="px-4 py-2 font-medium text-gray-900 flex items-center">{task.title}</td>
+                        <td className="px-4 py-2 text-gray-700 flex items-center">{task.type}</td>
+                        <td className="px-4 py-2 text-gray-700 flex items-center">{client ? `${client.firstName} ${client.lastName}` : ''}</td>
+                        <td className="px-4 py-2 flex items-center">
+                          <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-semibold ${
+                            task.status === 'completed' ? 'bg-green-100 text-green-800' :
+                            task.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                            task.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {task.status}
+                          </span>
+                        </td>
+                        <td className="px-4 py-2 flex items-center">
+                          <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-semibold ${
+                            task.priority === 'high' ? 'bg-red-100 text-red-800' :
+                            task.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {task.priority}
+                          </span>
+                        </td>
+                        <td className="px-4 py-2 text-gray-700 flex items-center">{task.dueDate ? new Date(task.dueDate).toLocaleDateString() : ''}</td>
+                        <td className="px-4 py-2 flex items-center space-x-2">
+                          <button className="text-indigo-500 hover:text-indigo-700" title="View">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                          </button>
+                          <button onClick={() => { setSelectedTask(task); setShowNewTaskModal(true); }} className="text-blue-500 hover:text-blue-700" title="Edit">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5h2m2 0h.01M17 5a2 2 0 012 2v10a2 2 0 01-2 2H7a2 2 0 01-2-2V7a2 2 0 012-2h1" /></svg>
+                          </button>
+                          <button onClick={() => handleDeleteTask(task.id)} className="text-red-500 hover:text-red-700" title="Delete">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
           </div>
         </>
       )}
@@ -248,26 +271,22 @@ const Tasks: React.FC = () => {
             events={events}
             startAccessor="start"
             endAccessor="end"
-            style={{ height: 600 }}
-            views={['month', 'week', 'day']}
-            defaultView="month"
-            onSelectEvent={(event: CalendarEvent) => {
-              setSelectedTask(event.resource);
-              setShowNewTaskModal(true);
-            }}
+            style={{ height: 500 }}
           />
         </div>
       )}
 
-      <TaskModal
-        isOpen={showNewTaskModal}
-        onClose={() => {
-          setShowNewTaskModal(false);
-          setSelectedTask(undefined);
-        }}
-        onSubmit={selectedTask ? handleUpdateTask : handleCreateTask}
-        task={selectedTask}
-      />
+      {showNewTaskModal && (
+        <TaskModal
+          isOpen={showNewTaskModal}
+          task={selectedTask}
+          onClose={() => {
+            setShowNewTaskModal(false);
+            setSelectedTask(undefined);
+          }}
+          onSubmit={selectedTask ? handleUpdateTask : handleCreateTask}
+        />
+      )}
     </div>
   );
 };

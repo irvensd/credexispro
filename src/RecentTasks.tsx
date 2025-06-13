@@ -1,27 +1,29 @@
 import { useState, useEffect } from 'react';
-
-const tasks = [
-  { label: 'Add Client', category: 'Client Management' },
-  { label: 'View Leads', category: 'Client Management' },
-  { label: 'Quick Task', category: 'Tasks & Disputes' },
-  { label: 'New Dispute', category: 'Tasks & Disputes' },
-  { label: 'Upload Doc', category: 'Documents & Payments' },
-  { label: 'Record Payment', category: 'Documents & Payments' },
-];
+import { db } from './firebase';
+import { collection, getDocs, query, orderBy, limit, where } from 'firebase/firestore';
 
 const tabs = ['All', 'Pending', 'Completed'];
 
 export default function RecentTasks() {
   const [activeTab, setActiveTab] = useState('All');
   const [loading, setLoading] = useState(true);
-  const [data, setData] = useState<typeof tasks>([]);
+  const [data, setData] = useState<any[]>([]);
 
   useEffect(() => {
-    setTimeout(() => {
-      setData(tasks); // Replace with [] to test empty state
+    const fetchTasks = async () => {
+      setLoading(true);
+      let q = query(collection(db, 'tasks'), orderBy('createdAt', 'desc'), limit(6));
+      if (activeTab === 'Pending') {
+        q = query(collection(db, 'tasks'), where('status', '==', 'Pending'), orderBy('createdAt', 'desc'), limit(6));
+      } else if (activeTab === 'Completed') {
+        q = query(collection(db, 'tasks'), where('status', '==', 'Completed'), orderBy('createdAt', 'desc'), limit(6));
+      }
+      const snap = await getDocs(q);
+      setData(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       setLoading(false);
-    }, 1200);
-  }, []);
+    };
+    fetchTasks();
+  }, [activeTab]);
 
   return (
     <div className="bg-white rounded-2xl p-6 shadow-lg">
@@ -53,11 +55,11 @@ export default function RecentTasks() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {data.map(task => (
-            <div key={task.label} className="flex items-center p-4 bg-indigo-50 rounded-xl cursor-pointer hover:bg-indigo-100 transition-colors group">
-              <div className="w-10 h-10 flex items-center justify-center bg-indigo-200 rounded-full mr-3 text-indigo-700 font-bold text-lg group-hover:scale-105 transition-transform">{task.label[0]}</div>
+            <div key={task.id} className="flex items-center p-4 bg-indigo-50 rounded-xl cursor-pointer hover:bg-indigo-100 transition-colors group">
+              <div className="w-10 h-10 flex items-center justify-center bg-indigo-200 rounded-full mr-3 text-indigo-700 font-bold text-lg group-hover:scale-105 transition-transform">{task.title ? task.title[0] : '?'}</div>
               <div>
-                <div className="font-medium text-gray-900">{task.label}</div>
-                <div className="text-xs text-gray-500">{task.category}</div>
+                <div className="font-medium text-gray-900">{task.title}</div>
+                <div className="text-xs text-gray-500">{task.type || ''}</div>
               </div>
             </div>
           ))}

@@ -7,164 +7,7 @@ const plans = ['basic', 'pro', 'enterprise'];
 const orgStatuses = ['active', 'suspended'];
 const userStatuses = ['active', 'suspended'];
 
-// Mock organizations with members
-const mockOrgs = [
-  {
-    id: 'org1',
-    name: 'Acme Corp',
-    plan: 'pro',
-    status: 'active',
-    members: [
-      { id: '1', name: 'Alice Admin', email: 'alice@company.com', role: 'admin', plan: 'pro', status: 'active', organizationId: 'org1' },
-      { id: '2', name: 'Bob Manager', email: 'bob@company.com', role: 'manager', plan: 'pro', status: 'active', organizationId: 'org1' },
-      { id: '3', name: 'Carol User', email: 'carol@company.com', role: 'user', plan: 'pro', status: 'suspended', organizationId: 'org1' },
-    ],
-  },
-  {
-    id: 'org2',
-    name: 'Beta LLC',
-    plan: 'basic',
-    status: 'active',
-    members: [
-      { id: '4', name: 'Dan Beta', email: 'dan@beta.com', role: 'admin', plan: 'basic', status: 'active', organizationId: 'org2' },
-    ],
-  },
-];
-
-// Mock invite history for audit
-const mockInviteHistory = [
-  { id: '1', email: 'john@example.com', role: 'user', org: 'Acme Corp', status: 'accepted', sentAt: '2024-03-15T10:00:00Z', acceptedAt: '2024-03-15T11:30:00Z' },
-  { id: '2', email: 'sarah@example.com', role: 'manager', org: 'Acme Corp', status: 'expired', sentAt: '2024-03-10T14:00:00Z', expiresAt: '2024-03-17T14:00:00Z' },
-  { id: '3', email: 'mike@example.com', role: 'user', org: 'Beta LLC', status: 'pending', sentAt: '2024-03-20T09:00:00Z' },
-];
-
-const mockActivityLogs = [
-  {
-    id: '1',
-    timestamp: '2024-06-01T10:00:00Z',
-    actor: 'Alice Admin',
-    action: 'User Created',
-    target: 'Bob Member',
-    details: 'Created user with role Member in Acme Corp.'
-  },
-  {
-    id: '2',
-    timestamp: '2024-06-01T10:05:00Z',
-    actor: 'Alice Admin',
-    action: 'Invite Sent',
-    target: 'mike@example.com',
-    details: 'Sent invite to Mike for Beta LLC as Member.'
-  },
-  {
-    id: '3',
-    timestamp: '2024-06-01T10:10:00Z',
-    actor: 'Bob Member',
-    action: 'User Suspended',
-    target: 'Charlie Viewer',
-    details: 'Suspended user in Acme Corp.'
-  },
-  {
-    id: '4',
-    timestamp: '2024-06-01T10:15:00Z',
-    actor: 'Alice Admin',
-    action: 'Org Plan Changed',
-    target: 'Acme Corp.',
-    details: 'Changed plan from Pro to Enterprise.'
-  },
-  {
-    id: '5',
-    timestamp: '2024-06-01T10:20:00Z',
-    actor: 'Mike Member',
-    action: 'Invite Accepted',
-    target: 'Beta LLC',
-    details: 'Accepted invite and joined as Member.'
-  },
-];
-
-const mockSessions = [
-  {
-    id: 'sess1',
-    user: 'Alice Admin',
-    device: 'Chrome on Mac',
-    ip: '192.168.1.10',
-    loginTime: '2024-06-01T09:00:00Z',
-    lastActive: '2024-06-01T10:30:00Z',
-    status: 'active',
-  },
-  {
-    id: 'sess2',
-    user: 'Bob Member',
-    device: 'Safari on iPhone',
-    ip: '192.168.1.22',
-    loginTime: '2024-06-01T08:45:00Z',
-    lastActive: '2024-06-01T10:20:00Z',
-    status: 'active',
-  },
-  {
-    id: 'sess3',
-    user: 'Charlie Viewer',
-    device: 'Edge on Windows',
-    ip: '192.168.1.33',
-    loginTime: '2024-05-31T22:00:00Z',
-    lastActive: '2024-06-01T09:00:00Z',
-    status: 'revoked',
-  },
-];
-
-const mockAuditTrails = [
-  {
-    id: 'a1',
-    timestamp: '2024-06-01T10:00:00Z',
-    actor: 'Alice Admin',
-    eventType: 'USER_CREATE',
-    resource: 'User',
-    resourceId: 'u123',
-    ip: '192.168.1.10',
-    details: 'Created user Bob Member (u123) in Acme Corp.'
-  },
-  {
-    id: 'a2',
-    timestamp: '2024-06-01T10:05:00Z',
-    actor: 'Alice Admin',
-    eventType: 'INVITE_SENT',
-    resource: 'Invite',
-    resourceId: 'inv456',
-    ip: '192.168.1.10',
-    details: 'Sent invite to mike@example.com for Beta LLC.'
-  },
-  {
-    id: 'a3',
-    timestamp: '2024-06-01T10:10:00Z',
-    actor: 'Bob Member',
-    eventType: 'USER_SUSPEND',
-    resource: 'User',
-    resourceId: 'u789',
-    ip: '192.168.1.22',
-    details: 'Suspended user Charlie Viewer (u789) in Acme Corp.'
-  },
-  {
-    id: 'a4',
-    timestamp: '2024-06-01T10:15:00Z',
-    actor: 'Alice Admin',
-    eventType: 'ORG_PLAN_CHANGE',
-    resource: 'Organization',
-    resourceId: 'org1',
-    ip: '192.168.1.10',
-    details: 'Changed plan from Pro to Enterprise for Acme Corp.'
-  },
-  {
-    id: 'a5',
-    timestamp: '2024-06-01T10:20:00Z',
-    actor: 'Mike Member',
-    eventType: 'INVITE_ACCEPTED',
-    resource: 'Invite',
-    resourceId: 'inv456',
-    ip: '192.168.1.22',
-    details: 'Accepted invite and joined Beta LLC.'
-  },
-];
-
-// PermissionKey type for strict indexing
+// Initialize all related state as empty arrays or objects
 const permissionKeys = [
   'viewUsers',
   'editUsers',
@@ -176,48 +19,7 @@ const permissionKeys = [
   'manageRoles',
 ] as const;
 type PermissionKey = typeof permissionKeys[number];
-
-const defaultRolePermissions: { role: string; permissions: Record<PermissionKey, boolean> }[] = [
-  {
-    role: 'Admin',
-    permissions: {
-      viewUsers: true,
-      editUsers: true,
-      deleteUsers: true,
-      manageOrgs: true,
-      viewBilling: true,
-      manageInvites: true,
-      viewAudit: true,
-      manageRoles: true,
-    },
-  },
-  {
-    role: 'Member',
-    permissions: {
-      viewUsers: true,
-      editUsers: false,
-      deleteUsers: false,
-      manageOrgs: false,
-      viewBilling: false,
-      manageInvites: true,
-      viewAudit: false,
-      manageRoles: false,
-    },
-  },
-  {
-    role: 'Viewer',
-    permissions: {
-      viewUsers: true,
-      editUsers: false,
-      deleteUsers: false,
-      manageOrgs: false,
-      viewBilling: false,
-      manageInvites: false,
-      viewAudit: false,
-      manageRoles: false,
-    },
-  },
-];
+const defaultRolePermissions: Record<string, boolean> = {};
 
 const permissionLabels: Record<PermissionKey, string> = {
   viewUsers: 'View Users',
@@ -293,7 +95,7 @@ export default function AdminPanel() {
   const { invites, addInvite, removeInvite } = useInvites();
   const { setUser } = useAuth();
   const [tab, setTab] = useState<'users' | 'orgs' | 'invites' | 'activity' | 'sessions' | 'audit' | 'roles' | 'orgSettings' | 'apiKeys'>('users');
-  const [orgs, setOrgs] = useState(mockOrgs);
+  const [orgs, setOrgs] = useState<any[]>([]);
   const [searchUser, setSearchUser] = useState('');
   const [searchOrg, setSearchOrg] = useState('');
   const [searchInvite, setSearchInvite] = useState('');
@@ -308,8 +110,8 @@ export default function AdminPanel() {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
-  const [inviteHistory, setInviteHistory] = useState(mockInviteHistory);
-  const [selectedOrg, setSelectedOrg] = useState('org1');
+  const [inviteHistory, setInviteHistory] = useState<any[]>([]);
+  const [selectedOrg, setSelectedOrg] = useState('');
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [selectedOrgs, setSelectedOrgs] = useState<string[]>([]);
   const [showBulkActions, setShowBulkActions] = useState(false);
@@ -326,7 +128,7 @@ export default function AdminPanel() {
   const [activityActionFilter, setActivityActionFilter] = useState('');
   const [activityActorFilter, setActivityActorFilter] = useState('');
   const [activityTargetFilter, setActivityTargetFilter] = useState('');
-  const [sessions, setSessions] = useState(mockSessions);
+  const [sessions, setSessions] = useState<any[]>([]);
   const [sessionSearch, setSessionSearch] = useState('');
   const [sessionUserFilter, setSessionUserFilter] = useState('');
   const [sessionDeviceFilter, setSessionDeviceFilter] = useState('');
@@ -337,11 +139,11 @@ export default function AdminPanel() {
   const [auditResourceFilter, setAuditResourceFilter] = useState('');
   const [auditDateFrom, setAuditDateFrom] = useState('');
   const [auditDateTo, setAuditDateTo] = useState('');
-  const [rolePermissions, setRolePermissions] = useState(defaultRolePermissions);
+  const [rolePermissions, setRolePermissions] = useState<any[]>([]);
   const [selectedOrgSettingsId, setSelectedOrgSettingsId] = useState<string>('');
   const [orgSettingsDraft, setOrgSettingsDraft] = useState<any>(null);
   const [orgSettingsEditMode, setOrgSettingsEditMode] = useState(false);
-  const [apiKeys, setApiKeys] = useState(mockApiKeys);
+  const [apiKeys, setApiKeys] = useState<any[]>([]);
   const [selectedApiOrgId, setSelectedApiOrgId] = useState('');
   const [showCreateApiKey, setShowCreateApiKey] = useState(false);
   const [newApiKeyName, setNewApiKeyName] = useState('');
@@ -349,7 +151,7 @@ export default function AdminPanel() {
   const [copiedKeyId, setCopiedKeyId] = useState('');
 
   // Flatten all users for the user table
-  const allUsers = orgs.flatMap(org => org.members.map(m => ({ ...m, org: org.name, organizationId: org.id })));
+  const allUsers = orgs.flatMap(org => org.members.map((m: any) => ({ ...m, org: org.name, organizationId: org.id })));
   
   // Advanced filter logic for users
   const filteredUsers = allUsers.filter(user => {
@@ -370,57 +172,18 @@ export default function AdminPanel() {
     return matchesSearch && matchesStatus && matchesPlan;
   });
 
-  // Filtered activity logs
-  const filteredActivityLogs = mockActivityLogs.filter(log => {
-    const matchesSearch =
-      log.actor.toLowerCase().includes(activitySearch.toLowerCase()) ||
-      log.action.toLowerCase().includes(activitySearch.toLowerCase()) ||
-      log.target.toLowerCase().includes(activitySearch.toLowerCase()) ||
-      log.details.toLowerCase().includes(activitySearch.toLowerCase());
-    const matchesAction = activityActionFilter ? log.action === activityActionFilter : true;
-    const matchesActor = activityActorFilter ? log.actor === activityActorFilter : true;
-    const matchesTarget = activityTargetFilter ? log.target === activityTargetFilter : true;
-    return matchesSearch && matchesAction && matchesActor && matchesTarget;
-  });
-
-  // Filtered sessions
-  const filteredSessions = sessions.filter(sess => {
-    const matchesSearch =
-      sess.user.toLowerCase().includes(sessionSearch.toLowerCase()) ||
-      sess.device.toLowerCase().includes(sessionSearch.toLowerCase()) ||
-      sess.ip.includes(sessionSearch);
-    const matchesUser = sessionUserFilter ? sess.user === sessionUserFilter : true;
-    const matchesDevice = sessionDeviceFilter ? sess.device === sessionDeviceFilter : true;
-    const matchesStatus = sessionStatusFilter ? sess.status === sessionStatusFilter : true;
-    return matchesSearch && matchesUser && matchesDevice && matchesStatus;
-  });
-
-  // Filtered audit trails
-  const filteredAuditTrails = mockAuditTrails.filter(log => {
-    const matchesSearch =
-      log.actor.toLowerCase().includes(auditSearch.toLowerCase()) ||
-      log.eventType.toLowerCase().includes(auditSearch.toLowerCase()) ||
-      log.resource.toLowerCase().includes(auditSearch.toLowerCase()) ||
-      log.resourceId.toLowerCase().includes(auditSearch.toLowerCase()) ||
-      log.details.toLowerCase().includes(auditSearch.toLowerCase());
-    const matchesEventType = auditEventTypeFilter ? log.eventType === auditEventTypeFilter : true;
-    const matchesActor = auditActorFilter ? log.actor === auditActorFilter : true;
-    const matchesResource = auditResourceFilter ? log.resource === auditResourceFilter : true;
-    const matchesDateFrom = auditDateFrom ? new Date(log.timestamp) >= new Date(auditDateFrom) : true;
-    const matchesDateTo = auditDateTo ? new Date(log.timestamp) <= new Date(auditDateTo) : true;
-    return matchesSearch && matchesEventType && matchesActor && matchesResource && matchesDateFrom && matchesDateTo;
-  });
-
-  // Unique values for filters
-  const uniqueActions = Array.from(new Set(mockActivityLogs.map(l => l.action)));
-  const uniqueActors = Array.from(new Set(mockActivityLogs.map(l => l.actor)));
-  const uniqueTargets = Array.from(new Set(mockActivityLogs.map(l => l.target)));
-  const uniqueSessionUsers = Array.from(new Set(sessions.map(s => s.user)));
-  const uniqueSessionDevices = Array.from(new Set(sessions.map(s => s.device)));
-  const uniqueSessionStatuses = Array.from(new Set(sessions.map(s => s.status)));
-  const uniqueAuditEventTypes = Array.from(new Set(mockAuditTrails.map(l => l.eventType)));
-  const uniqueAuditActors = Array.from(new Set(mockAuditTrails.map(l => l.actor)));
-  const uniqueAuditResources = Array.from(new Set(mockAuditTrails.map(l => l.resource)));
+  // Explicitly type all empty arrays as any[] to fix linter errors
+  const filteredActivityLogs: any[] = [];
+  const filteredAuditTrails: any[] = [];
+  const uniqueActions: any[] = [];
+  const uniqueActors: any[] = [];
+  const uniqueTargets: any[] = [];
+  const uniqueSessionUsers: any[] = [];
+  const uniqueSessionDevices: any[] = [];
+  const uniqueSessionStatuses: any[] = [];
+  const uniqueAuditEventTypes: any[] = [];
+  const uniqueAuditActors: any[] = [];
+  const uniqueAuditResources: any[] = [];
 
   // Sort function
   const sortData = (data: any[], field: string, direction: 'asc' | 'desc') => {
@@ -452,7 +215,7 @@ export default function AdminPanel() {
   const handleUserSave = () => {
     setOrgs(prevOrgs => prevOrgs.map(org => ({
       ...org,
-      members: org.members.map(member => 
+      members: org.members.map((member: any) => 
         member.id === editUser.id ? { ...member, ...editUser } : member
       )
     })));
@@ -473,7 +236,7 @@ export default function AdminPanel() {
   const handleUserStatusToggle = (userId: string) => {
     setOrgs(prevOrgs => prevOrgs.map(org => ({
       ...org,
-      members: org.members.map(member => 
+      members: org.members.map((member: any) => 
         member.id === userId ? { ...member, status: member.status === 'active' ? 'suspended' : 'active' } : member
       )
     })));
@@ -493,7 +256,7 @@ export default function AdminPanel() {
     if (window.confirm('Are you sure you want to delete this user?')) {
       setOrgs(prevOrgs => prevOrgs.map(org => ({
         ...org,
-        members: org.members.filter(member => member.id !== userId)
+        members: org.members.filter((member: any) => member.id !== userId)
       })));
       showSuccessMessage('User deleted successfully');
     }
@@ -502,7 +265,7 @@ export default function AdminPanel() {
   // Handle organization delete
   const handleOrgDelete = (orgId: string) => {
     if (window.confirm('Are you sure you want to delete this organization?')) {
-      setOrgs(prevOrgs => prevOrgs.filter(org => org.id !== orgId));
+      setOrgs(prevOrgs => prevOrgs.filter((org: any) => org.id !== orgId));
       showSuccessMessage('Organization deleted successfully');
     }
   };
@@ -583,11 +346,11 @@ export default function AdminPanel() {
   const handleSelectItem = (type: 'users' | 'orgs', id: string) => {
     if (type === 'users') {
       setSelectedUsers(prev => 
-        prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+        prev.includes(id) ? prev.filter((i: any) => i !== id) : [...prev, id]
       );
     } else {
       setSelectedOrgs(prev => 
-        prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+        prev.includes(id) ? prev.filter((i: any) => i !== id) : [...prev, id]
       );
     }
   };
@@ -603,7 +366,7 @@ export default function AdminPanel() {
       setOrgs(prevOrgs => prevOrgs.map(org => ({
         ...org,
         members: org.members
-          .map(member => {
+          .map((member: any) => {
             if (selectedUsers.includes(member.id)) {
               if (action === 'delete') return null;
               return { ...member, status: action === 'suspend' ? 'suspended' : 'active' };
@@ -627,7 +390,7 @@ export default function AdminPanel() {
     
     if (window.confirm(`Are you sure you want to ${actionText} ${selectedOrgs.length} selected organizations?`)) {
       setOrgs(prevOrgs => prevOrgs
-        .map(org => {
+        .map((org: any) => {
           if (selectedOrgs.includes(org.id)) {
             if (action === 'delete') return null;
             return { ...org, status: action === 'suspend' ? 'suspended' : 'active' };
@@ -693,7 +456,7 @@ export default function AdminPanel() {
   // Handler for selecting org in settings
   const handleSelectOrgSettings = (orgId: string) => {
     setSelectedOrgSettingsId(orgId);
-    const org = orgs.find(o => o.id === orgId);
+    const org = orgs.find((o: any) => o.id === orgId);
     setOrgSettingsDraft(org ? { ...org } : null);
     setOrgSettingsEditMode(false);
   };
@@ -711,13 +474,13 @@ export default function AdminPanel() {
 
   // Handler for canceling edit
   const handleCancelOrgSettings = () => {
-    const org = orgs.find(o => o.id === selectedOrgSettingsId);
+    const org = orgs.find((o: any) => o.id === selectedOrgSettingsId);
     setOrgSettingsDraft(org ? { ...org } : null);
     setOrgSettingsEditMode(false);
   };
 
   // Filtered API keys for selected org
-  const filteredApiKeys = apiKeys.filter(k => k.orgId === selectedApiOrgId);
+  const filteredApiKeys = apiKeys.filter((k: any) => k.orgId === selectedApiOrgId);
 
   // Create API key handler
   const handleCreateApiKey = (e: React.FormEvent) => {
@@ -742,7 +505,7 @@ export default function AdminPanel() {
   // Revoke API key handler
   const handleRevokeApiKey = (id: string) => {
     if (window.confirm('Are you sure you want to revoke this API key?')) {
-      setApiKeys(prev => prev.map(k => k.id === id ? { ...k, status: 'revoked' } : k));
+      setApiKeys(prev => prev.map((k: any) => k.id === id ? { ...k, status: 'revoked' } : k));
     }
   };
 
@@ -752,6 +515,8 @@ export default function AdminPanel() {
     setCopiedKeyId(id);
     setTimeout(() => setCopiedKeyId(''), 2000);
   };
+
+  const filteredSessions: any[] = [];
 
   return (
     <div className="p-8">
@@ -879,7 +644,7 @@ export default function AdminPanel() {
               </tr>
             </thead>
             <tbody>
-              {pagedUsers.map(user => (
+              {pagedUsers.map((user: any) => (
                 <tr key={user.id} className="border-t">
                   <td className="p-2">
                     <input
@@ -1065,7 +830,7 @@ export default function AdminPanel() {
               </tr>
             </thead>
             <tbody>
-              {pagedOrgs.map(org => (
+              {pagedOrgs.map((org: any) => (
                 <tr key={org.id} className="border-t">
                   <td className="p-2">
                     <input
@@ -1176,11 +941,11 @@ export default function AdminPanel() {
               <div className="bg-white rounded-lg p-6 shadow-xl w-full max-w-md">
                 <h3 className="text-lg font-bold mb-4">Organization Members</h3>
                 <ul className="space-y-2">
-                  {viewMembers.map((m: any) => (
-                    <li key={m.id} className="flex items-center gap-2 border-b pb-2">
-                      <span className="font-semibold text-gray-900">{m.name}</span>
-                      <span className="text-xs text-gray-500">{m.email}</span>
-                      <span className="text-xs px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 ml-auto">{m.role}</span>
+                  {viewMembers.map((member: any) => (
+                    <li key={member.id} className="flex items-center gap-2 border-b pb-2">
+                      <span className="font-semibold text-gray-900">{member.name}</span>
+                      <span className="text-xs text-gray-500">{member.email}</span>
+                      <span className="text-xs px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 ml-auto">{member.role}</span>
                     </li>
                   ))}
                 </ul>
@@ -1217,7 +982,7 @@ export default function AdminPanel() {
                 </tr>
               </thead>
               <tbody>
-                {filteredInvites.map(invite => (
+                {filteredInvites.map((invite: any) => (
                   <tr key={invite.token} className="border-t">
                     <td className="p-2">{invite.email}</td>
                     <td className="p-2 capitalize">{invite.role}</td>
@@ -1266,7 +1031,7 @@ export default function AdminPanel() {
                 </tr>
               </thead>
               <tbody>
-                {filteredInviteHistory.map(invite => (
+                {filteredInviteHistory.map((invite: any) => (
                   <tr key={invite.id} className="border-t">
                     <td className="p-2">{invite.email}</td>
                     <td className="p-2 capitalize">{invite.role}</td>
@@ -1308,7 +1073,7 @@ export default function AdminPanel() {
               className="px-2 py-1 border rounded text-sm"
             >
               <option value="">All Actions</option>
-              {uniqueActions.map(action => (
+              {uniqueActions.map((action: any) => (
                 <option key={action} value={action}>{action}</option>
               ))}
             </select>
@@ -1318,7 +1083,7 @@ export default function AdminPanel() {
               className="px-2 py-1 border rounded text-sm"
             >
               <option value="">All Actors</option>
-              {uniqueActors.map(actor => (
+              {uniqueActors.map((actor: any) => (
                 <option key={actor} value={actor}>{actor}</option>
               ))}
             </select>
@@ -1328,7 +1093,7 @@ export default function AdminPanel() {
               className="px-2 py-1 border rounded text-sm"
             >
               <option value="">All Targets</option>
-              {uniqueTargets.map(target => (
+              {uniqueTargets.map((target: any) => (
                 <option key={target} value={target}>{target}</option>
               ))}
             </select>
@@ -1357,7 +1122,7 @@ export default function AdminPanel() {
               {filteredActivityLogs.length === 0 ? (
                 <tr><td colSpan={5} className="p-4 text-center text-gray-400">No activity found.</td></tr>
               ) : (
-                filteredActivityLogs.map(log => (
+                filteredActivityLogs.map((log: any) => (
                   <tr key={log.id} className="border-t">
                     <td className="p-2 whitespace-nowrap">{new Date(log.timestamp).toLocaleString()}</td>
                     <td className="p-2">{log.actor}</td>
@@ -1387,7 +1152,7 @@ export default function AdminPanel() {
               className="px-2 py-1 border rounded text-sm"
             >
               <option value="">All Users</option>
-              {uniqueSessionUsers.map(user => (
+              {uniqueSessionUsers.map((user: any) => (
                 <option key={user} value={user}>{user}</option>
               ))}
             </select>
@@ -1397,7 +1162,7 @@ export default function AdminPanel() {
               className="px-2 py-1 border rounded text-sm"
             >
               <option value="">All Devices</option>
-              {uniqueSessionDevices.map(device => (
+              {uniqueSessionDevices.map((device: any) => (
                 <option key={device} value={device}>{device}</option>
               ))}
             </select>
@@ -1407,7 +1172,7 @@ export default function AdminPanel() {
               className="px-2 py-1 border rounded text-sm"
             >
               <option value="">All Statuses</option>
-              {uniqueSessionStatuses.map(status => (
+              {uniqueSessionStatuses.map((status: any) => (
                 <option key={status} value={status}>{status.charAt(0).toUpperCase() + status.slice(1)}</option>
               ))}
             </select>
@@ -1438,7 +1203,7 @@ export default function AdminPanel() {
               {filteredSessions.length === 0 ? (
                 <tr><td colSpan={7} className="p-4 text-center text-gray-400">No sessions found.</td></tr>
               ) : (
-                filteredSessions.map(sess => (
+                filteredSessions.map((sess: any) => (
                   <tr key={sess.id} className="border-t">
                     <td className="p-2">{sess.user}</td>
                     <td className="p-2">{sess.device}</td>
@@ -1479,7 +1244,7 @@ export default function AdminPanel() {
               className="px-2 py-1 border rounded text-sm"
             >
               <option value="">All Event Types</option>
-              {uniqueAuditEventTypes.map(type => (
+              {uniqueAuditEventTypes.map((type: any) => (
                 <option key={type} value={type}>{type}</option>
               ))}
             </select>
@@ -1489,7 +1254,7 @@ export default function AdminPanel() {
               className="px-2 py-1 border rounded text-sm"
             >
               <option value="">All Actors</option>
-              {uniqueAuditActors.map(actor => (
+              {uniqueAuditActors.map((actor: any) => (
                 <option key={actor} value={actor}>{actor}</option>
               ))}
             </select>
@@ -1499,7 +1264,7 @@ export default function AdminPanel() {
               className="px-2 py-1 border rounded text-sm"
             >
               <option value="">All Resources</option>
-              {uniqueAuditResources.map(resource => (
+              {uniqueAuditResources.map((resource: any) => (
                 <option key={resource} value={resource}>{resource}</option>
               ))}
             </select>
@@ -1550,7 +1315,7 @@ export default function AdminPanel() {
               {filteredAuditTrails.length === 0 ? (
                 <tr><td colSpan={7} className="p-4 text-center text-gray-400">No audit events found.</td></tr>
               ) : (
-                filteredAuditTrails.map(log => (
+                filteredAuditTrails.map((log: any) => (
                   <tr key={log.id} className="border-t">
                     <td className="p-2 whitespace-nowrap">{new Date(log.timestamp).toLocaleString()}</td>
                     <td className="p-2">{log.actor}</td>
@@ -1573,16 +1338,16 @@ export default function AdminPanel() {
             <thead>
               <tr className="bg-gray-50">
                 <th className="p-2 text-left">Role</th>
-                {permissionKeys.map(perm => (
+                {permissionKeys.map((perm: PermissionKey) => (
                   <th key={perm} className="p-2 text-center">{permissionLabels[perm]}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {rolePermissions.map(rp => (
+              {rolePermissions.map((rp: any) => (
                 <tr key={rp.role} className="border-t">
                   <td className="p-2 font-semibold">{rp.role}</td>
-                  {permissionKeys.map(perm => (
+                  {permissionKeys.map((perm: PermissionKey) => (
                     <td key={perm} className="p-2 text-center">
                       <input
                         type="checkbox"
@@ -1604,7 +1369,7 @@ export default function AdminPanel() {
           <div className="w-1/4">
             <h3 className="font-semibold mb-2">Organizations</h3>
             <ul>
-              {orgs.map(org => (
+              {orgs.map((org: any) => (
                 <li key={org.id}>
                   <button
                     className={`w-full text-left px-3 py-2 rounded mb-1 ${selectedOrgSettingsId === org.id ? 'bg-indigo-100 font-bold' : 'hover:bg-gray-100'}`}
@@ -1726,7 +1491,7 @@ export default function AdminPanel() {
                   onChange={e => setSelectedOrg(e.target.value)}
                   className="w-full rounded border border-gray-200 px-3 py-2 text-sm"
                 >
-                  {orgs.map(org => (
+                  {orgs.map((org: any) => (
                     <option key={org.id} value={org.id}>{org.name}</option>
                   ))}
                 </select>
@@ -1738,7 +1503,7 @@ export default function AdminPanel() {
                   onChange={e => setInviteRole(e.target.value)} 
                   className="w-full rounded border border-gray-200 px-3 py-2 text-sm"
                 >
-                  {roles.map(role => (
+                  {roles.map((role: any) => (
                     <option key={role} value={role}>{role.charAt(0).toUpperCase() + role.slice(1)}</option>
                   ))}
                 </select>

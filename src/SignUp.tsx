@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
+import { auth, db } from './firebase';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
 
 export default function SignUp() {
   const navigate = useNavigate();
@@ -52,12 +55,26 @@ export default function SignUp() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (validateForm()) {
-      // TODO: Implement signup logic
-      console.log('Form submitted:', formData);
+      try {
+        const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
+        console.log('User created:', userCredential.user);
+
+        // Store user data in Firestore
+        await setDoc(doc(db, 'users', userCredential.user.uid), {
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          company: formData.company,
+        });
+
       navigate('/dashboard');
+      } catch (error: any) {
+        console.error('Signup failed:', error);
+        setErrors(prev => ({ ...prev, submit: error.message }));
+      }
     }
   };
 

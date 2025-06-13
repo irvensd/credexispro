@@ -3,49 +3,6 @@ import { Search, Eye, Edit, Trash2, X, DollarSign, CreditCard, Building2, CheckC
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 
-const mockPayments = [
-  { 
-    id: '1',
-    client: 'John Doe',
-    amount: 299.99,
-    type: 'Credit Card',
-    status: 'Completed',
-    date: '2024-03-15',
-    reference: 'PAY-001',
-    notes: 'Monthly subscription payment'
-  },
-  { 
-    id: '2',
-    client: 'Jane Smith',
-    amount: 499.99,
-    type: 'Bank Transfer',
-    status: 'Pending',
-    date: '2024-03-18',
-    reference: 'PAY-002',
-    notes: 'Initial setup fee'
-  },
-  { 
-    id: '3',
-    client: 'Sarah Lee',
-    amount: 299.99,
-    type: 'Credit Card',
-    status: 'Failed',
-    date: '2024-03-17',
-    reference: 'PAY-003',
-    notes: 'Payment declined'
-  },
-  { 
-    id: '4',
-    client: 'Mike D',
-    amount: 299.99,
-    type: 'Bank Transfer',
-    status: 'Completed',
-    date: '2024-03-16',
-    reference: 'PAY-004',
-    notes: 'Monthly subscription payment'
-  },
-];
-
 const emptyPayment = { 
   id: '',
   client: '',
@@ -64,9 +21,9 @@ const shimmer = `\n  @keyframes shimmer {\n    0% { background-position: -400px 
 
 export default function Payments() {
   const [loading, setLoading] = useState(true);
-  const [payments, setPayments] = useState<typeof mockPayments>([]);
+  const [payments, setPayments] = useState<any[]>([]);
   const [search, setSearch] = useState('');
-  const [selected, setSelected] = useState<typeof mockPayments[0] | null>(null);
+  const [selected, setSelected] = useState<any | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({ ...emptyPayment });
   const [formError, setFormError] = useState('');
@@ -77,7 +34,7 @@ export default function Payments() {
 
   useEffect(() => {
     setTimeout(() => {
-      setPayments(mockPayments);
+      setPayments([]);
       setLoading(false);
     }, 1200);
   }, []);
@@ -132,7 +89,7 @@ export default function Payments() {
     setEditIndex(null);
   }
 
-  function handleEdit(payment: typeof mockPayments[0], idx: number) {
+  function handleEdit(payment: any, idx: number) {
     setForm(payment);
     setEditIndex(idx);
     setShowAdd(true);

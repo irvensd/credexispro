@@ -1,7 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import type { RootState } from './store';
-import { useState, Suspense } from 'react';
+import { useState, Suspense, useEffect } from 'react';
 import { OnboardingProvider, WelcomeTutorial, QuickStartGuide, HelpDocumentation } from './components/onboarding';
 import Home from './Home';
 import Login from './Login';
@@ -33,6 +33,12 @@ import TermsOfService from './pages/legal/TermsOfService';
 import GDPRCompliance from './components/legal/GDPRCompliance';
 import Footer from './components/layout/Footer';
 import CookieConsentBanner from './components/legal/CookieConsentBanner';
+import { auth, db } from './firebase';
+import { signInWithEmailAndPassword, signOut, User, onAuthStateChanged } from 'firebase/auth';
+import { Toaster } from 'react-hot-toast';
+import NotFound from './pages/NotFound';
+import { collection, getDocs, addDoc, doc, getDoc, updateDoc } from 'firebase/firestore';
+import { loginSuccess, logout as reduxLogout } from './store/slices/authSlice';
 
 // Loading component
 const LoadingSpinner = () => (
@@ -42,7 +48,7 @@ const LoadingSpinner = () => (
 );
 
 // Dashboard Layout Component
-const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
+const DashboardLayout = ({ children, userData }: { children: React.ReactNode, userData?: any }) => {
   const location = useLocation();
   const [showQuickStart, setShowQuickStart] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
@@ -52,13 +58,12 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
       <div className="flex flex-1">
         <Sidebar />
         <div className="flex-1 flex flex-col">
-          <Topbar onHelpClick={() => setShowHelp(true)} onQuickStartClick={() => setShowQuickStart(true)} />
+          <Topbar onHelpClick={() => setShowHelp(true)} onQuickStartClick={() => setShowQuickStart(true)} userData={userData} />
           <main className="flex-1 overflow-y-auto p-6 dashboard-main">
             {children}
           </main>
         </div>
       </div>
-      <Footer />
       <QuickStartGuide isOpen={showQuickStart} onClose={() => setShowQuickStart(false)} />
       <HelpDocumentation isOpen={showHelp} onClose={() => setShowHelp(false)} />
     </div>
@@ -66,9 +71,15 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
 };
 
 // Protected route component
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+const ProtectedRoute = ({ children, userData }: { children: React.ReactNode, userData?: any }) => {
   const { isAuthenticated, loading } = useSelector((state: RootState) => state.auth);
-  const [showWelcome, setShowWelcome] = useState(true);
+  const [showWelcome, setShowWelcome] = useState(false);
+
+  useEffect(() => {
+    if (userData && !userData.hasSeenWelcome) {
+      setShowWelcome(true);
+    }
+  }, [userData]);
 
   if (loading) {
     return <LoadingSpinner />;
@@ -79,11 +90,22 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   }
 
   return (
-    <DashboardLayout>
+    <DashboardLayout userData={userData}>
       <WelcomeTutorial 
         isOpen={showWelcome} 
         onClose={() => setShowWelcome(false)} 
-        onComplete={() => setShowWelcome(false)} 
+        onComplete={async () => {
+          setShowWelcome(false);
+          if (userData) {
+            try {
+              await updateDoc(doc(db, 'users', userData.id), {
+                hasSeenWelcome: true
+              });
+            } catch (error) {
+              console.error('Error updating welcome status:', error);
+            }
+          }
+        }} 
       />
       {children}
     </DashboardLayout>
@@ -91,6 +113,89 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 export default function App() {
+  const [user, setUser] = useState<User | null>(null);
+  const [userData, setUserData] = useState<any>(null);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [data, setData] = useState<any[]>([]);
+  const [newItem, setNewItem] = useState('');
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      setUser(firebaseUser);
+      if (firebaseUser) {
+        console.log('Current user UID:', firebaseUser.uid);
+        const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+        console.log('User doc exists:', userDoc.exists());
+        if (userDoc.exists()) {
+          setUserData({ ...userDoc.data(), id: firebaseUser.uid });
+          console.log('User data:', userDoc.data());
+          dispatch(loginSuccess({
+            user: {
+              id: firebaseUser.uid,
+              email: firebaseUser.email || '',
+              name: firebaseUser.displayName || '',
+              role: 'user', // or get from Firestore if you store roles
+              emailVerified: firebaseUser.emailVerified,
+            },
+            token: 'firebase',
+            refreshToken: '',
+          }));
+        } else {
+          setUserData(null);
+          console.log('No user document found in Firestore.');
+          dispatch(reduxLogout());
+        }
+      } else {
+        setUserData(null);
+        dispatch(reduxLogout());
+      }
+    });
+    return () => unsubscribe();
+  }, [dispatch]);
+
+  const handleLogin = async () => {
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      alert('Logged in as: ' + userCredential.user.email);
+    } catch (error: any) {
+      alert('Login failed: ' + error.message);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      setUser(null);
+      setUserData(null);
+      alert('Logged out successfully');
+    } catch (error: any) {
+      alert('Logout failed: ' + error.message);
+    }
+  };
+
+  const fetchData = async () => {
+    const querySnapshot = await getDocs(collection(db, 'items'));
+    const items = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    setData(items);
+  };
+
+  const addData = async () => {
+    if (!newItem) return;
+    try {
+      await addDoc(collection(db, 'items'), { name: newItem });
+      setNewItem('');
+      fetchData();
+    } catch (error: any) {
+      alert('Error adding item: ' + error.message);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
   return (
     <InviteProvider>
       <AuthProvider>
@@ -102,26 +207,29 @@ export default function App() {
               <Route path="/signup" element={<SignUp />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="/dashboard" element={<ProtectedRoute><DashboardContent /></ProtectedRoute>} />
-              <Route path="/why-credexis" element={<ProtectedRoute><WhyCredexis /></ProtectedRoute>} />
-              <Route path="/clients" element={<ProtectedRoute><Clients /></ProtectedRoute>} />
-              <Route path="/disputes" element={<ProtectedRoute><Disputes /></ProtectedRoute>} />
-              <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
-              <Route path="/payments" element={<ProtectedRoute><Payments /></ProtectedRoute>} />
-              <Route path="/documents" element={<ProtectedRoute><Documents /></ProtectedRoute>} />
-              <Route path="/letter-templates" element={<ProtectedRoute><LetterTemplates /></ProtectedRoute>} />
-              <Route path="/marketing" element={<ProtectedRoute><Marketing /></ProtectedRoute>} />
-              <Route path="/credit-tools" element={<ProtectedRoute><CreditTools /></ProtectedRoute>} />
-              <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-              <Route path="/invoices" element={<ProtectedRoute><Invoices /></ProtectedRoute>} />
-              <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+              <Route path="/dashboard" element={<ProtectedRoute userData={userData}><DashboardContent /></ProtectedRoute>} />
+              <Route path="/why-credexis" element={<ProtectedRoute userData={userData}><WhyCredexis /></ProtectedRoute>} />
+              <Route path="/clients" element={<ProtectedRoute userData={userData}><Clients /></ProtectedRoute>} />
+              <Route path="/disputes" element={<ProtectedRoute userData={userData}><Disputes /></ProtectedRoute>} />
+              <Route path="/tasks" element={<ProtectedRoute userData={userData}><Tasks /></ProtectedRoute>} />
+              <Route path="/payments" element={<ProtectedRoute userData={userData}><Payments /></ProtectedRoute>} />
+              <Route path="/documents" element={<ProtectedRoute userData={userData}><Documents /></ProtectedRoute>} />
+              <Route path="/letter-templates" element={<ProtectedRoute userData={userData}><LetterTemplates /></ProtectedRoute>} />
+              <Route path="/marketing" element={<ProtectedRoute userData={userData}><Marketing /></ProtectedRoute>} />
+              <Route path="/credit-tools" element={<ProtectedRoute userData={userData}><CreditTools /></ProtectedRoute>} />
+              <Route path="/settings" element={<ProtectedRoute userData={userData}><Settings userData={userData} /></ProtectedRoute>} />
+              <Route path="/invoices" element={<ProtectedRoute userData={userData}><Invoices /></ProtectedRoute>} />
+              <Route path="/reports" element={<ProtectedRoute userData={userData}><Reports /></ProtectedRoute>} />
               <Route path="/admin" element={<AdminPanel />} />
               <Route path="/privacy-policy" element={<PrivacyPolicy />} />
               <Route path="/cookie-policy" element={<CookiePolicy />} />
               <Route path="/terms-of-service" element={<TermsOfService />} />
-              <Route path="/gdpr" element={<GDPRCompliance />} />
+              <Route path="/gdpr-compliance" element={<GDPRCompliance />} />
+              <Route path="*" element={<NotFound />} />
             </Routes>
+            <Toaster position="top-right" toastOptions={{ duration: 3500 }} />
             <CookieConsentBanner />
+            <Footer />
           </Suspense>
         </OnboardingProvider>
       </AuthProvider>

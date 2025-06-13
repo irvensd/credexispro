@@ -3,105 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 
-const mockCampaigns = [
-  { 
-    id: 1, 
-    name: 'Welcome Email', 
-    type: 'Email', 
-    status: 'Sent', 
-    date: '2024-01-15', 
-    openRate: '45%', 
-    clickRate: '12%',
-    audience: 'New Clients',
-    sent: 250,
-    opens: 113,
-    clicks: 30,
-    conversions: 8,
-    revenue: '$2,400'
-  },
-  { 
-    id: 2, 
-    name: 'Follow-up SMS', 
-    type: 'SMS', 
-    status: 'Scheduled', 
-    date: '2024-01-20', 
-    openRate: 'N/A', 
-    clickRate: 'N/A',
-    audience: 'Active Clients',
-    sent: 0,
-    opens: 0,
-    clicks: 0,
-    conversions: 0,
-    revenue: '$0'
-  },
-  { 
-    id: 3, 
-    name: 'Credit Score Update', 
-    type: 'Email', 
-    status: 'Draft', 
-    date: '2024-01-25', 
-    openRate: 'N/A', 
-    clickRate: 'N/A',
-    audience: 'All Clients',
-    sent: 0,
-    opens: 0,
-    clicks: 0,
-    conversions: 0,
-    revenue: '$0'
-  }
-];
-
-interface Template {
-  id: number;
-  name: string;
-  type: string;
-  description: string;
-  successRate: number;
-  avgOpenRate: number;
-  avgClickRate: number;
-  category: string;
-}
-
-const templates = [
-  { 
-    id: 1, 
-    name: 'Credit Repair Introduction', 
-    type: 'Email', 
-    description: 'A professional introduction email for new clients.',
-    successRate: 85,
-    avgOpenRate: 45,
-    avgClickRate: 12,
-    category: 'Onboarding'
-  },
-  { 
-    id: 2, 
-    name: 'Follow-up Reminder', 
-    type: 'SMS', 
-    description: 'A friendly reminder SMS for follow-up appointments.',
-    successRate: 92,
-    avgOpenRate: 78,
-    avgClickRate: 35,
-    category: 'Appointments'
-  },
-  { 
-    id: 3, 
-    name: 'Credit Score Milestone', 
-    type: 'Email', 
-    description: 'Celebrate credit score improvements with clients.',
-    successRate: 88,
-    avgOpenRate: 52,
-    avgClickRate: 18,
-    category: 'Engagement'
-  }
-];
-
-const audiences = [
-  { id: 1, name: 'New Clients', count: 250, growth: 12 },
-  { id: 2, name: 'Active Clients', count: 450, growth: 8 },
-  { id: 3, name: 'At-Risk Clients', count: 75, growth: -5 },
-  { id: 4, name: 'High-Value Clients', count: 125, growth: 15 }
-];
-
 export default function Marketing() {
   const [isNewCampaignModalOpen, setIsNewCampaignModalOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
@@ -113,8 +14,9 @@ export default function Marketing() {
   });
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState('campaigns');
+  const [campaigns, setCampaigns] = useState<any[]>([]);
 
-  const filteredCampaigns = mockCampaigns.filter(campaign => {
+  const filteredCampaigns = campaigns.filter(campaign => {
     const matchesSearch = campaign.name.toLowerCase().includes(search.toLowerCase());
     const matchesFilters = 
       (!filters.type || campaign.type === filters.type) &&

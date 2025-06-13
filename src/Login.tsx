@@ -7,40 +7,51 @@ import { useAuth } from './hooks/useAuth';
 import { FormInput } from './components/FormInput';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { loginSchema, type LoginFormData } from './utils/validation';
+import { auth } from './firebase';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
-  const [isTestLoading, setIsTestLoading] = useState(false);
-  const { login } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
   });
 
   const onSubmit = async (data: LoginFormData) => {
     try {
-      await login(data.email, data.password);
-      toast.success('Login successful');
+      setIsLoading(true);
+      const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
+      console.log('Logged in as:', userCredential.user.email);
+      toast.success('Successfully logged in!');
       navigate('/dashboard');
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to login');
-    }
-  };
-
-  const handleTestLogin = async () => {
-    try {
-      setIsTestLoading(true);
-      await login('test@credexis.com', 'test123');
-      toast.success('Test login successful!');
-      navigate('/dashboard');
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Test login failed');
+    } catch (error: any) {
+      console.error('Login failed:', error);
+      let errorMessage = 'Failed to sign in';
+      
+      // Handle specific Firebase error codes
+      switch (error.code) {
+        case 'auth/user-not-found':
+        case 'auth/wrong-password':
+          errorMessage = 'Invalid email or password';
+          break;
+        case 'auth/too-many-requests':
+          errorMessage = 'Too many failed attempts. Please try again later';
+          break;
+        case 'auth/user-disabled':
+          errorMessage = 'This account has been disabled';
+          break;
+        default:
+          errorMessage = error.message || 'Failed to sign in';
+      }
+      
+      toast.error(errorMessage);
     } finally {
-      setIsTestLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -93,29 +104,16 @@ export default function Login() {
             </div>
           </div>
 
-          <div className="space-y-4">
+          <div>
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isLoading}
               className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
             >
-              {isSubmitting ? (
+              {isLoading ? (
                 <LoadingSpinner size="sm" className="text-white" />
               ) : (
                 'Sign in'
-              )}
-            </button>
-            
-            <button
-              type="button"
-              onClick={handleTestLogin}
-              disabled={isTestLoading || isSubmitting}
-              className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-            >
-              {isTestLoading ? (
-                <LoadingSpinner size="sm" />
-              ) : (
-                'Test Login'
               )}
             </button>
           </div>

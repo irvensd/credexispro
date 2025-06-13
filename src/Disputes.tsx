@@ -3,99 +3,6 @@ import { Search, Eye, Edit, Trash2, X, AlertCircle, CheckCircle2, Clock, FileWar
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 
-const mockDisputes = [
-  { 
-    id: '1',
-    client: 'John Smith',
-    type: 'Late Payment',
-    creditor: 'Capital One Credit Card',
-    bureau: 'Experian',
-    status: 'Resolved',
-    submitted: '2024-01-06',
-    lastUpdated: '2024-01-20',
-    priority: 'High',
-    notes: 'Payment was made on time but reported as late. Successfully removed after providing payment receipt.',
-    creditImpact: 25,
-    disputeReason: 'Inaccurate Information',
-    nextAction: 'Monitor credit report for removal confirmation'
-  },
-  { 
-    id: '2',
-    client: 'Maria Garcia',
-    type: 'Collection Account',
-    creditor: 'Medical Services Collection',
-    bureau: 'Equifax',
-    status: 'In Progress',
-    submitted: '2024-01-12',
-    lastUpdated: '2024-01-18',
-    priority: 'High',
-    notes: 'Medical debt from services never received. Dispute submitted with medical records.',
-    creditImpact: 0,
-    disputeReason: 'Not My Debt',
-    nextAction: 'Awaiting bureau response (due 2024-02-15)'
-  },
-  { 
-    id: '3',
-    client: 'David Johnson',
-    type: 'Credit Utilization',
-    creditor: 'Chase Bank',
-    bureau: 'TransUnion',
-    status: 'Resolved',
-    submitted: '2024-01-10',
-    lastUpdated: '2024-01-25',
-    priority: 'Medium',
-    notes: 'Balance reported incorrectly as $2,500 instead of $500. Corrected with account statements.',
-    creditImpact: 15,
-    disputeReason: 'Inaccurate Balance',
-    nextAction: 'Completed - monitoring for score improvement'
-  },
-  { 
-    id: '4',
-    client: 'Sarah Williams',
-    type: 'Identity Theft',
-    creditor: 'Unauthorized Account - Store Card',
-    bureau: 'Equifax',
-    status: 'Submitted',
-    submitted: '2024-01-14',
-    lastUpdated: '2024-01-16',
-    priority: 'High',
-    notes: 'Account opened without knowledge or consent. Police report filed.',
-    creditImpact: 0,
-    disputeReason: 'Fraudulent Account',
-    nextAction: 'Police report filed, awaiting bureau investigation'
-  },
-  { 
-    id: '5',
-    client: 'John Smith',
-    type: 'Duplicate Account',
-    creditor: 'Discover Card',
-    bureau: 'Experian',
-    status: 'Draft',
-    submitted: '',
-    lastUpdated: '2024-01-15',
-    priority: 'Low',
-    notes: 'Same account listed twice with different account numbers.',
-    creditImpact: 0,
-    disputeReason: 'Duplicate Listing',
-    nextAction: 'Prepare dispute letter with account documentation'
-  },
-  { 
-    id: '6',
-    client: 'Emily Davis',
-    type: 'Inquiry Removal',
-    creditor: 'Auto Loan Inquiry',
-    bureau: 'TransUnion',
-    status: 'Rejected',
-    submitted: '2024-01-05',
-    lastUpdated: '2024-01-22',
-    priority: 'Low',
-    notes: 'Hard inquiry removal request denied. Bureau states inquiry is valid.',
-    creditImpact: 0,
-    disputeReason: 'Unauthorized Inquiry',
-    nextAction: 'Consider escalation or accept bureau decision'
-  }
-];
-
 const emptyDispute = { 
   id: '',
   client: '',
@@ -167,9 +74,9 @@ const disputeTemplates = [
 
 export default function Disputes() {
   const [loading, setLoading] = useState(true);
-  const [disputes, setDisputes] = useState<typeof mockDisputes>([]);
+  const [disputes, setDisputes] = useState<any[]>([]);
   const [search, setSearch] = useState('');
-  const [selected, setSelected] = useState<typeof mockDisputes[0] | null>(null);
+  const [selected, setSelected] = useState<any | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({ ...emptyDispute });
   const [formError, setFormError] = useState('');
@@ -188,7 +95,7 @@ export default function Disputes() {
 
   useEffect(() => {
     setTimeout(() => {
-      setDisputes(mockDisputes);
+      setDisputes([]);
       setLoading(false);
     }, 1200);
   }, []);
@@ -249,7 +156,7 @@ export default function Disputes() {
     setEditIndex(null);
   }
 
-  function handleEdit(dispute: typeof mockDisputes[0], idx: number) {
+  function handleEdit(dispute: any, idx: number) {
     setForm(dispute);
     setEditIndex(idx);
     setShowAdd(true);
@@ -307,7 +214,7 @@ export default function Disputes() {
     totalImpact: filtered.reduce((sum, d) => sum + d.creditImpact, 0)
   };
 
-  const renderTimeline = (dispute: typeof mockDisputes[0]) => {
+  const renderTimeline = (dispute: any) => {
     const timeline = [
       { date: dispute.submitted, action: 'Dispute Submitted', status: 'completed' },
       { date: new Date(dispute.submitted).getTime() + 7 * 24 * 60 * 60 * 1000, action: 'Bureau Acknowledgment', status: 'completed' },

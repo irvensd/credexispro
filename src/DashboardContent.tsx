@@ -7,6 +7,8 @@ import { motion } from 'framer-motion';
 import { PhoneCall, MessageCircle, Calendar, Plus, Zap, Upload, DollarSign, Mail, User, TrendingUp, Users } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import QuickActions from './components/QuickActions';
+import { db } from './firebase';
+import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
 
 const alertsData = [
   { type: 'urgent', icon: '⚠️', message: 'Overdue Task: Follow up with John Doe', time: '2h ago' },
@@ -53,13 +55,58 @@ const activityData = [
 
 const RecentActivity = () => {
   const [loading, setLoading] = useState(true);
-  const [data, setData] = useState<typeof activityData>([]);
+  const [activities, setActivities] = useState<any[]>([]);
+
   useEffect(() => {
-    setTimeout(() => {
-      setData(activityData); // Replace with [] to test empty state
-      setLoading(false);
-    }, 1200);
+    const fetchActivities = async () => {
+      try {
+        const activitiesRef = collection(db, 'activity');
+        const q = query(activitiesRef, orderBy('timestamp', 'desc'), limit(5));
+        const querySnapshot = await getDocs(q);
+        
+        const activities = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          timestamp: doc.data().timestamp?.toDate()
+        }));
+
+        setActivities(activities);
+      } catch (error) {
+        console.error('Error fetching activities:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchActivities();
   }, []);
+
+  const getActivityIcon = (type: string) => {
+    switch (type) {
+      case 'client_added':
+        return <User className="w-5 h-5" />;
+      case 'dispute_filed':
+        return <Zap className="w-5 h-5" />;
+      case 'payment_received':
+        return <DollarSign className="w-5 h-5" />;
+      case 'letter_sent':
+        return <Mail className="w-5 h-5" />;
+      default:
+        return <User className="w-5 h-5" />;
+    }
+  };
+
+  const formatTimeAgo = (date: Date) => {
+    const now = new Date();
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+    
+    if (diffInSeconds < 60) return 'just now';
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+    if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
+    return date.toLocaleDateString();
+  };
+
   return (
     <div className="bg-white rounded-2xl p-6 shadow-lg mb-6 min-h-[120px] flex flex-col justify-center">
       <div className="font-semibold text-lg mb-4 text-gray-900 flex items-center gap-2">
@@ -71,19 +118,19 @@ const RecentActivity = () => {
             <div key={i} className="h-8 bg-gray-100 rounded animate-pulse" />
           ))}
         </div>
-      ) : data.length === 0 ? (
+      ) : activities.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-8 text-gray-400">
           <span className="text-4xl mb-2">🕒</span>
           <span>No recent activity yet.</span>
         </div>
       ) : (
         <ul className="divide-y divide-gray-100">
-          {data.map((item, idx) => (
-            <li key={idx} className="flex items-center gap-3 py-3">
-              <span className="text-2xl text-indigo-500">{item.icon}</span>
+          {activities.map((activity) => (
+            <li key={activity.id} className="flex items-center gap-3 py-3">
+              <span className="text-2xl text-indigo-500">{getActivityIcon(activity.type)}</span>
               <div className="flex-1">
-                <div className="text-sm text-gray-900 font-medium">{item.action}</div>
-                <div className="text-xs text-gray-400">{item.user} &bull; {item.time}</div>
+                <div className="text-sm text-gray-900 font-medium">{activity.description}</div>
+                <div className="text-xs text-gray-400">{activity.user} &bull; {formatTimeAgo(activity.timestamp)}</div>
               </div>
             </li>
           ))}
@@ -95,13 +142,66 @@ const RecentActivity = () => {
 
 const UpcomingAppointments = () => {
   const [loading, setLoading] = useState(true);
-  const [data, setData] = useState<typeof appointmentsData>([]);
+  const [appointments, setAppointments] = useState<any[]>([]);
+
   useEffect(() => {
-    setTimeout(() => {
-      setData(appointmentsData); // Replace with [] to test empty state
-      setLoading(false);
-    }, 1200);
+    const fetchAppointments = async () => {
+      try {
+        const now = new Date();
+        const tasksRef = collection(db, 'tasks');
+        const q = query(
+          tasksRef,
+          where('type', '==', 'Appointment'),
+          where('status', 'in', ['Pending', 'In Progress'])
+        );
+        const querySnapshot = await getDocs(q);
+        
+        const appointments = querySnapshot.docs
+          .map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            dueDate: doc.data().dueDate?.toDate()
+          }))
+          .filter(appt => appt.dueDate >= now)
+          .sort((a, b) => a.dueDate - b.dueDate)
+          .slice(0, 3);
+
+        setAppointments(appointments);
+      } catch (error) {
+        console.error('Error fetching appointments:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAppointments();
   }, []);
+
+  const getAppointmentIcon = (type: string) => {
+    switch (type) {
+      case 'Phone Call':
+        return <PhoneCall className="w-5 h-5" />;
+      case 'Consultation':
+        return <MessageCircle className="w-5 h-5" />;
+      default:
+        return <Calendar className="w-5 h-5" />;
+    }
+  };
+
+  const formatAppointmentTime = (date: Date) => {
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    if (date.toDateString() === today.toDateString()) {
+      return `Today, ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    } else if (date.toDateString() === tomorrow.toDateString()) {
+      return `Tomorrow, ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    } else {
+      return date.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    }
+  };
+
   return (
     <div className="bg-white rounded-2xl p-6 shadow-lg mb-6 min-h-[120px] flex flex-col justify-center">
       <div className="font-semibold text-lg mb-4 text-gray-900 flex items-center gap-2">
@@ -113,19 +213,19 @@ const UpcomingAppointments = () => {
             <div key={i} className="h-8 bg-gray-100 rounded animate-pulse" />
           ))}
         </div>
-      ) : data.length === 0 ? (
+      ) : appointments.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-8 text-gray-400">
           <span className="text-4xl mb-2">📅</span>
           <span>No upcoming appointments.</span>
         </div>
       ) : (
         <ul className="divide-y divide-gray-100">
-          {data.map((appt, idx) => (
-            <li key={idx} className="flex items-center gap-3 py-3">
-              <span className="text-2xl text-indigo-500">{appt.icon}</span>
+          {appointments.map((appt) => (
+            <li key={appt.id} className="flex items-center gap-3 py-3">
+              <span className="text-2xl text-indigo-500">{getAppointmentIcon(appt.type)}</span>
               <div className="flex-1">
                 <div className="text-sm text-gray-900 font-medium">{appt.client}</div>
-                <div className="text-xs text-gray-500">{appt.type} &bull; {appt.time}</div>
+                <div className="text-xs text-gray-500">{appt.type} &bull; {formatAppointmentTime(appt.dueDate)}</div>
               </div>
             </li>
           ))}
@@ -135,20 +235,47 @@ const UpcomingAppointments = () => {
   );
 };
 
-const trendsData = [
-  { label: 'Dispute Success', value: '68%', trend: '+5%', icon: <TrendingUp className="w-5 h-5" />, color: 'text-green-600', chart: 'bar' },
-  { label: 'Client Growth', value: '12', trend: '+2', icon: <Users className="w-5 h-5" />, color: 'text-blue-600', chart: 'line' },
-  { label: 'Revenue', value: '$2,400', trend: '+$200', icon: <DollarSign className="w-5 h-5" />, color: 'text-indigo-600', chart: 'bar' },
-];
-
 const PerformanceTrends = () => {
   const [loading, setLoading] = useState(true);
-  const [data, setData] = useState<typeof trendsData>([]);
+  const [data, setData] = useState([
+    { label: 'Dispute Success', value: '0%', trend: '+0%', icon: <TrendingUp className="w-5 h-5" />, color: 'text-green-600', chart: 'bar' },
+    { label: 'Client Growth', value: '0', trend: '+0', icon: <Users className="w-5 h-5" />, color: 'text-blue-600', chart: 'line' },
+    { label: 'Revenue', value: '$0', trend: '+$0', icon: <DollarSign className="w-5 h-5" />, color: 'text-indigo-600', chart: 'bar' },
+  ]);
   useEffect(() => {
-    setTimeout(() => {
-      setData(trendsData); // Replace with [] to test empty state
+    const fetchTrends = async () => {
+      setLoading(true);
+      // Dispute Success
+      const resolvedSnap = await getDocs(query(collection(db, 'disputes'), where('status', '==', 'Resolved')));
+      const totalSnap = await getDocs(collection(db, 'disputes'));
+      const disputeSuccess = totalSnap.size > 0 ? Math.round((resolvedSnap.size / totalSnap.size) * 100) : 0;
+      // Client Growth (last 30 days)
+      const now = new Date();
+      const lastMonth = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 30);
+      const clientsSnap = await getDocs(collection(db, 'clients'));
+      const newClients = clientsSnap.docs.filter(doc => {
+        const data = doc.data();
+        return data.joinDate && new Date(data.joinDate) >= lastMonth;
+      }).length;
+      // Revenue (last 30 days)
+      let revenue = 0;
+      let revenueChange = 0;
+      const paymentsSnap = await getDocs(collection(db, 'payments'));
+      paymentsSnap.docs.forEach(doc => {
+        const data = doc.data();
+        if (data.date && new Date(data.date) >= lastMonth) {
+          revenue += Number(data.amount) || 0;
+        }
+        // Optionally, calculate revenueChange here if you have previous period data
+      });
+      setData([
+        { label: 'Dispute Success', value: `${disputeSuccess}%`, trend: '', icon: <TrendingUp className="w-5 h-5" />, color: 'text-green-600', chart: 'bar' },
+        { label: 'Client Growth', value: `${newClients}`, trend: '', icon: <Users className="w-5 h-5" />, color: 'text-blue-600', chart: 'line' },
+        { label: 'Revenue', value: `$${revenue.toLocaleString()}`, trend: '', icon: <DollarSign className="w-5 h-5" />, color: 'text-indigo-600', chart: 'bar' },
+      ]);
       setLoading(false);
-    }, 1200);
+    };
+    fetchTrends();
   }, []);
   return (
     <div className="bg-white rounded-2xl p-6 shadow-lg mb-6 min-h-[120px] flex flex-col justify-center">
@@ -175,7 +302,7 @@ const PerformanceTrends = () => {
                 <div className="text-sm text-gray-900 font-medium">{trend.label}</div>
                 <div className="flex items-end gap-2">
                   <span className="text-xl font-bold text-gray-900">{trend.value}</span>
-                  <span className="text-xs font-semibold text-green-500">{trend.trend}</span>
+                  {trend.trend && <span className="text-xs font-semibold text-green-500">{trend.trend}</span>}
                 </div>
                 <div className="h-2 mt-2 bg-gradient-to-r from-indigo-200 to-indigo-400 rounded-full w-2/3"></div>
               </div>
@@ -187,18 +314,12 @@ const PerformanceTrends = () => {
   );
 };
 
-const leaderboardData = [
-  { name: 'John Doe', avatar: <User className="w-6 h-6" />, metric: 'Payments', value: '$1,200' },
-  { name: 'Jane Smith', avatar: <User className="w-6 h-6" />, metric: 'Disputes Won', value: '5' },
-  { name: 'Sarah Lee', avatar: <User className="w-6 h-6" />, metric: 'Active Disputes', value: '3' },
-];
-
 const ClientLeaderboard = () => {
   const [loading, setLoading] = useState(true);
-  const [data, setData] = useState<typeof leaderboardData>([]);
+  const [data, setData] = useState<any[]>([]);
   useEffect(() => {
     setTimeout(() => {
-      setData(leaderboardData); // Replace with [] to test empty state
+      setData([]); // Always empty until real data is implemented
       setLoading(false);
     }, 1200);
   }, []);

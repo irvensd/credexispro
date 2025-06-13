@@ -8,6 +8,7 @@ import { useMediaQuery } from 'react-responsive';
 interface TopbarProps {
   onHelpClick: () => void;
   onQuickStartClick: () => void;
+  userData?: { firstName?: string; lastName?: string; email?: string };
 }
 
 const pageTitles: Record<string, string> = {
@@ -25,7 +26,7 @@ const pageTitles: Record<string, string> = {
   '/reports': 'Reports',
 };
 
-export default function Topbar({ onHelpClick, onQuickStartClick }: TopbarProps) {
+export default function Topbar({ onHelpClick, onQuickStartClick, userData }: TopbarProps) {
   const [alertsOpen, setAlertsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -33,7 +34,7 @@ export default function Topbar({ onHelpClick, onQuickStartClick }: TopbarProps) 
   const alertsRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, setUser, mockUsers } = useAuth();
+  const { user } = useAuth();
   const isMobile = useMediaQuery({ maxWidth: 768 });
   const title = pageTitles[location.pathname] || 'Dashboard';
 
@@ -116,23 +117,6 @@ export default function Topbar({ onHelpClick, onQuickStartClick }: TopbarProps) 
               <AlertsDropdown open={alertsOpen} />
             </div>
 
-            {/* User switcher for testing */}
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-700">User:</span>
-              <select
-                value={user.id}
-                onChange={e => {
-                  const selected = mockUsers.find(u => u.id === e.target.value);
-                  if (selected) setUser(selected);
-                }}
-                className="px-2 py-1 rounded border border-gray-300 text-xs bg-white"
-              >
-                {mockUsers.map(u => (
-                  <option key={u.id} value={u.id}>{u.name} ({u.role})</option>
-                ))}
-              </select>
-            </div>
-
             {/* Profile dropdown */}
             <div className="relative" ref={profileRef}>
               <button
@@ -142,10 +126,10 @@ export default function Topbar({ onHelpClick, onQuickStartClick }: TopbarProps) 
                 aria-haspopup="true"
               >
                 <span className="hidden sm:block font-medium text-gray-700">
-                  {user?.name || 'User'}
+                  {userData ? `${userData.firstName || ''} ${userData.lastName || ''}`.trim() : user?.email || 'User'}
                 </span>
                 <span className="w-9 h-9 bg-indigo-200 rounded-full flex items-center justify-center font-bold text-indigo-700 ring-2 ring-indigo-400">
-                  {user?.name?.[0] || 'U'}
+                  {userData && userData.firstName ? userData.firstName[0] : (user?.email ? user.email[0] : 'U')}
                 </span>
                 <ChevronDown
                   className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${
@@ -158,8 +142,8 @@ export default function Topbar({ onHelpClick, onQuickStartClick }: TopbarProps) 
               {profileOpen && (
                 <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50">
                   <div className="px-4 py-2 border-b border-gray-100">
-                    <p className="font-medium text-gray-900">{user?.name}</p>
-                    <p className="text-sm text-gray-500">{user?.email}</p>
+                    <p className="font-medium text-gray-900">{userData ? `${userData.firstName || ''} ${userData.lastName || ''}`.trim() : user?.email}</p>
+                    <p className="text-sm text-gray-500">{userData?.email || user?.email}</p>
                   </div>
                   <div className="py-1">
                     <Link

@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate, Navigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAuth } from './contexts/AuthContext';
+import { db } from './firebase';
+import { doc, updateDoc } from 'firebase/firestore';
 
 const settingsSections = [
   { id: 'profile', label: 'Profile', icon: <User className="w-5 h-5" /> },
@@ -173,19 +175,39 @@ function PlanSelectionModal({ isOpen, onClose, currentPlan }: { isOpen: boolean;
   );
 }
 
-export default function Settings() {
+export default function Settings({ userData }: { userData?: any }) {
+  // Defensive: check for userData before any usage
+  if (!userData) {
+    return <div>Loading...</div>;
+  }
+
   const [activeSection, setActiveSection] = useState('profile');
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
-  const [currentPlan, setCurrentPlan] = useState('pro'); // This would come from your backend
-  const { user, setUser, mockUsers, logout } = useAuth();
+  const [currentPlan, setCurrentPlan] = useState('pro');
   const navigate = useNavigate();
   const roles = ['admin', 'manager', 'user'];
-  const [selectedUserId, setSelectedUserId] = useState(user.id);
-  const selectedUser = mockUsers.find(u => u.id === selectedUserId) || user;
+  const [selectedUserId, setSelectedUserId] = useState(userData.id || '');
+  const [firstName, setFirstName] = useState(userData.firstName || '');
+  const [lastName, setLastName] = useState(userData.lastName || '');
+  const [email, setEmail] = useState(userData.email || '');
+  const [saving, setSaving] = useState(false);
 
-  if (!user) {
-    return <Navigate to="/" replace />;
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const userRef = doc(db, 'users', userData.id || userData.uid);
+      await updateDoc(userRef, {
+        firstName,
+        lastName,
+        email,
+      });
+      toast.success('Profile updated!');
+    } catch (error: any) {
+      toast.error('Failed to update profile: ' + error.message);
+    } finally {
+      setSaving(false);
   }
+  };
 
   return (
     <div className="flex flex-col md:flex-row gap-8 p-6 max-w-[1400px] mx-auto">
@@ -195,12 +217,12 @@ export default function Settings() {
           {/* User Info */}
           <div className="flex flex-col items-center gap-2 mb-6">
             <div className="h-16 w-16 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-3xl font-bold">
-              {user.name[0]}
+              {firstName ? firstName[0] : email[0]}
             </div>
             <div className="text-center">
-              <div className="font-semibold text-gray-900">{user.name}</div>
-              <div className="text-sm text-gray-500">{user.email}</div>
-              <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-xs bg-blue-50 text-blue-700 font-medium">{user.plan} Plan</span>
+              <div className="font-semibold text-gray-900">{firstName} {lastName}</div>
+              <div className="text-sm text-gray-500">{email}</div>
+              <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-xs bg-blue-50 text-blue-700 font-medium">{userData.plan} Plan</span>
             </div>
           </div>
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Settings</h2>
@@ -224,7 +246,6 @@ export default function Settings() {
         <button
           className="flex items-center gap-2 px-3 py-2 mt-8 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
           onClick={() => {
-            logout();
             navigate('/');
           }}
         >
@@ -246,25 +267,36 @@ export default function Settings() {
               <form className="space-y-6">
                 <div className="flex items-center gap-4">
                   <div className="h-16 w-16 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-3xl font-bold">
-                    {user.name[0]}
+                    {firstName ? firstName[0] : email[0]}
                   </div>
                   <button type="button" className="px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors">Change Avatar</button>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                  <input type="text" className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm" defaultValue={user.name} />
+                  <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+                  <input type="text" className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm" value={firstName} onChange={e => setFirstName(e.target.value)} />
                 </div>
                 <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                  <input type="text" className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm" value={lastName} onChange={e => setLastName(e.target.value)} />
+                </div>
+                <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                  <input type="email" className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm" defaultValue={user.email} />
+                  <input type="email" className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm" value={email} onChange={e => setEmail(e.target.value)} />
                 </div>
                 <div className="flex gap-3">
-                  <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">Save Changes</button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50"
+                    onClick={handleSave}
+                    disabled={saving}
+                  >
+                    {saving ? 'Saving...' : 'Save Changes'}
+                  </button>
                   <button type="button" className="px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">Cancel</button>
                 </div>
               </form>
               {/* Role switcher for admins - now inside Profile section */}
-              {user.role === 'admin' && (
+              {userData.role === 'admin' && (
                 <div className="mt-10 mb-4">
                   <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 flex flex-col gap-6">
                     <h2 className="text-xl font-bold mb-2 text-indigo-700 flex items-center gap-2">
@@ -280,19 +312,16 @@ export default function Settings() {
                             onChange={e => setSelectedUserId(e.target.value)}
                             className="w-full px-3 py-2 rounded-lg border border-gray-200 text-base bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-200"
                           >
-                            {mockUsers.map(u => (
-                              <option key={u.id} value={u.id}>{u.name} ({u.role})</option>
+                            {roles.map(role => (
+                              <option key={role} value={role}>{role.charAt(0).toUpperCase() + role.slice(1)}</option>
                             ))}
                           </select>
                         </div>
                         <div className="flex flex-col items-center gap-2 flex-1">
                           <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
                           <select
-                            value={selectedUser.role}
-                            onChange={e => {
-                              if (selectedUser.id === user.id) setUser({ ...user, role: e.target.value });
-                              selectedUser.role = e.target.value;
-                            }}
+                            value={userData.role}
+                            onChange={() => {}}
                             className="w-full px-3 py-2 rounded-lg border border-gray-200 text-base bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-200"
                           >
                             {roles.map(role => (
@@ -303,11 +332,11 @@ export default function Settings() {
                       </div>
                       <div className="flex items-center gap-4 mt-2">
                         <div className="h-12 w-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 text-xl font-bold">
-                          {selectedUser.name[0]}
+                          {firstName} {lastName}
                         </div>
                         <div>
-                          <div className="font-semibold text-gray-900">{selectedUser.name}</div>
-                          <div className="text-sm text-gray-500">{selectedUser.email}</div>
+                          <div className="font-semibold text-gray-900">{firstName} {lastName}</div>
+                          <div className="text-sm text-gray-500">{email}</div>
                         </div>
                       </div>
                       <button
@@ -373,7 +402,7 @@ export default function Settings() {
               <div className="bg-gray-50 rounded-lg p-4 border border-gray-100 mb-4">
                 <div className="font-medium text-gray-900 mb-2">Current Plan</div>
                 <div className="flex items-center gap-2">
-                  <span className="px-2 py-0.5 rounded-full text-xs bg-blue-50 text-blue-700 font-medium">{user.plan}</span>
+                  <span className="px-2 py-0.5 rounded-full text-xs bg-blue-50 text-blue-700 font-medium">{userData.plan}</span>
                   <span className="text-gray-500">$49/mo</span>
                 </div>
               </div>

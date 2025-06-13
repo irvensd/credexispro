@@ -2,48 +2,14 @@ import { useState } from 'react';
 import type { Invoice } from './types/Invoice';
 import type { Client } from './types/Client';
 
-// Mock data
-const mockClients: Client[] = [
-  { id: 1, firstName: 'John', lastName: 'Doe', email: '', phone: '', address: '', status: 'Active', creditScore: 0, goalScore: 0, joinDate: '', disputes: 0, progress: 0, nextAction: '', totalPaid: 0 },
-  { id: 2, firstName: 'Jane', lastName: 'Smith', email: '', phone: '', address: '', status: 'Active', creditScore: 0, goalScore: 0, joinDate: '', disputes: 0, progress: 0, nextAction: '', totalPaid: 0 },
-];
-const mockInvoices: Invoice[] = [
-  {
-    id: 1,
-    clientId: 1,
-    invoiceNumber: 'INV-1001',
-    issueDate: '2024-06-01',
-    dueDate: '2024-06-15',
-    status: 'Sent',
-    items: [
-      { description: 'Credit Repair Service', amount: 199 },
-    ],
-    total: 199,
-    paidAmount: 0,
-    notes: 'Thank you for your business!',
-  },
-  {
-    id: 2,
-    clientId: 2,
-    invoiceNumber: 'INV-1002',
-    issueDate: '2024-06-05',
-    dueDate: '2024-06-20',
-    status: 'Paid',
-    items: [
-      { description: 'Consultation', amount: 99 },
-    ],
-    total: 99,
-    paidAmount: 99,
-  },
-];
-
 export default function Invoices() {
-  const [invoices, setInvoices] = useState<Invoice[]>(mockInvoices);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
 
   const filtered = invoices.filter(inv => {
-    const client = mockClients.find(c => c.id === inv.clientId);
+    const client = clients.find(c => c.id === inv.clientId);
     const clientName = client ? `${client.firstName} ${client.lastName}` : '';
     const matchesSearch =
       inv.invoiceNumber.toLowerCase().includes(search.toLowerCase()) ||
@@ -81,6 +47,19 @@ export default function Invoices() {
         </select>
       </div>
       <div className="bg-white rounded-2xl shadow-lg overflow-x-auto">
+        {invoices.length === 0 ? (
+          <div className="text-center py-12">
+            <h3 className="mt-4 text-lg font-medium text-gray-900">No invoices</h3>
+            <p className="mt-2 text-sm text-gray-500">Get started by creating your first invoice.</p>
+            <div className="mt-6">
+              <button
+                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                Create Invoice
+              </button>
+            </div>
+          </div>
+        ) : (
         <table className="min-w-full divide-y divide-gray-200">
           <thead>
             <tr className="text-gray-400 text-xs bg-gray-50">
@@ -94,7 +73,7 @@ export default function Invoices() {
           </thead>
           <tbody>
             {filtered.map(inv => {
-              const client = mockClients.find(c => c.id === inv.clientId);
+                const client = clients.find(c => c.id === inv.clientId);
               return (
                 <tr key={inv.id} className="border-t border-gray-100 hover:bg-indigo-50 transition-colors">
                   <td className="py-3 px-4 font-medium text-gray-900">{inv.invoiceNumber}</td>
@@ -122,6 +101,7 @@ export default function Invoices() {
             })}
           </tbody>
         </table>
+        )}
       </div>
     </div>
   );

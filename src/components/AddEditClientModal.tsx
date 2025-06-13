@@ -2,11 +2,14 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, User, Mail, Phone, MapPin, Target, DollarSign, AlertCircle, Check } from 'lucide-react';
 import type { Client } from '../types/Client';
+import { activityService } from '../services/activityService';
+import { useAuth } from '../contexts/AuthContext';
+import { toast } from 'react-hot-toast';
 
 interface AddEditClientModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (client: Omit<Client, 'id'> & { id?: number }) => void;
+  onSave: (client: Omit<Client, 'id'> & { id?: string }) => void;
   client?: Client | null;
 }
 
@@ -27,12 +30,11 @@ const initialClient: Omit<Client, 'id'> = {
   dateOfBirth: '',
   ssn: '',
   notes: '',
-  monthlyFee: 49,
-  servicePlan: 'Pro',
 };
 
 export default function AddEditClientModal({ isOpen, onClose, onSave, client }: AddEditClientModalProps) {
-  const [formData, setFormData] = useState<Omit<Client, 'id'> & { id?: number }>(initialClient);
+  const { user } = useAuth();
+  const [formData, setFormData] = useState<Omit<Client, 'id'> & { id?: string }>(initialClient);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -88,12 +90,7 @@ export default function AddEditClientModal({ isOpen, onClose, onSave, client }: 
 
     if (step === 3) {
       // Service Information
-      if (!formData.servicePlan) {
-        newErrors.servicePlan = 'Service plan is required';
-      }
-      if (formData.monthlyFee && (formData.monthlyFee < 0 || formData.monthlyFee > 10000)) {
-        newErrors.monthlyFee = 'Monthly fee must be between $0 and $10,000';
-      }
+      // (no servicePlan or monthlyFee validation)
     }
 
     setErrors(newErrors);
@@ -110,25 +107,33 @@ export default function AddEditClientModal({ isOpen, onClose, onSave, client }: 
     setCurrentStep(currentStep - 1);
   };
 
-  const handleSubmit = async () => {
-    if (!validateStep(currentStep)) {
-      return;
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (!validateStep(currentStep)) {
+        return;
+      }
+      setIsSubmitting(true);
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      const clientData = {
+        ...formData,
+        ...(client?.id ? { id: client.id } : {}),
+        joinDate: client?.joinDate || formData.joinDate,
+      };
+      await onSave(clientData);
+      if (client) {
+        await activityService.logClientUpdated(`${clientData.firstName} ${clientData.lastName}`, user?.id || '');
+      } else {
+        await activityService.logClientAdded(`${clientData.firstName} ${clientData.lastName}`, user?.id || '');
+      }
+      setIsSubmitting(false);
+      setFormData(initialClient);
+      onClose();
+    } catch (error) {
+      console.error('Error submitting client:', error);
+      toast.error('Failed to save client');
+      setIsSubmitting(false);
     }
-
-    setIsSubmitting(true);
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    const clientData = {
-      ...formData,
-      id: client?.id || Date.now(),
-      joinDate: client?.joinDate || formData.joinDate,
-    };
-
-    onSave(clientData);
-    setIsSubmitting(false);
-    onClose();
   };
 
   const handleChange = (field: keyof Client, value: string | number) => {
@@ -390,74 +395,9 @@ export default function AddEditClientModal({ isOpen, onClose, onSave, client }: 
           <div className="space-y-6">
             <div className="text-center">
               <DollarSign className="w-12 h-12 text-indigo-600 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900">Service & Billing</h3>
-              <p className="text-gray-500">Service plan and payment information</p>
+              <h3 className="text-lg font-semibold text-gray-900">Billing</h3>
+              <p className="text-gray-500">Payment information</p>
             </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Service Plan *
-              </label>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {[
-                  { id: 'Basic', name: 'Basic', price: 29, features: ['Up to 50 clients', 'Basic disputes'] },
-                  { id: 'Pro', name: 'Pro', price: 49, features: ['Up to 200 clients', 'Advanced disputes'] },
-                  { id: 'Enterprise', name: 'Enterprise', price: 99, features: ['Unlimited clients', 'Premium support'] }
-                ].map((plan) => (
-                  <div
-                    key={plan.id}
-                    className={`p-4 border-2 rounded-lg cursor-pointer transition-colors ${
-                      formData.servicePlan === plan.id
-                        ? 'border-indigo-500 bg-indigo-50'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                    onClick={() => {
-                      handleChange('servicePlan', plan.id);
-                      handleChange('monthlyFee', plan.price);
-                    }}
-                  >
-                    <div className="text-center">
-                      <h4 className="font-semibold text-gray-900">{plan.name}</h4>
-                      <div className="text-2xl font-bold text-indigo-600">${plan.price}</div>
-                      <div className="text-sm text-gray-500">/month</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              {errors.servicePlan && (
-                <p className="mt-1 text-sm text-red-600 flex items-center">
-                  <AlertCircle className="w-4 h-4 mr-1" />
-                  {errors.servicePlan}
-                </p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Monthly Fee
-              </label>
-              <div className="relative">
-                <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  type="number"
-                  min="0"
-                  max="10000"
-                  value={formData.monthlyFee || ''}
-                  onChange={(e) => handleChange('monthlyFee', parseFloat(e.target.value) || 0)}
-                  className={`w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${
-                    errors.monthlyFee ? 'border-red-300' : 'border-gray-300'
-                  }`}
-                  placeholder="49.00"
-                />
-              </div>
-              {errors.monthlyFee && (
-                <p className="mt-1 text-sm text-red-600 flex items-center">
-                  <AlertCircle className="w-4 h-4 mr-1" />
-                  {errors.monthlyFee}
-                </p>
-              )}
-            </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Initial Payment
@@ -474,7 +414,6 @@ export default function AddEditClientModal({ isOpen, onClose, onSave, client }: 
                 />
               </div>
             </div>
-
             <div className="bg-green-50 p-4 rounded-lg">
               <div className="flex items-center">
                 <Check className="w-5 h-5 text-green-600 mr-2" />

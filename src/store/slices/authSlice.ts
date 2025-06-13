@@ -108,18 +108,6 @@ const authSlice = createSlice({
   },
 });
 
-// Test user data
-export const testUser: User = {
-  id: '1',
-  email: 'test@credexis.com',
-  name: 'Test User',
-  role: 'admin',
-  emailVerified: true,
-};
-
-export const testToken = 'test-token';
-export const testRefreshToken = 'test-refresh-token';
-
 export const {
   loginStart,
   loginSuccess,

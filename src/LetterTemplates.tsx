@@ -2,45 +2,9 @@ import { useState } from 'react';
 import { PlusCircle, Edit, Eye, Trash2, FileText, ChevronRight, History, Download, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const defaultTemplates = [
-  {
-    id: '1',
-    name: 'Dispute Letter - Inaccurate Info',
-    type: 'Dispute',
-    content: `To Whom It May Concern,\n\nI am writing to dispute the following information on my credit report.\n\nAccount Name: [Account Name]\nAccount Number: [Account Number]\nReason: [Dispute Reason]\n\nPlease investigate and remove this inaccurate information.\n\nSincerely,\n[Client Name]`,
-    fields: ['Account Name', 'Account Number', 'Dispute Reason', 'Client Name'],
-    created: '2024-05-01',
-  },
-  {
-    id: '2',
-    name: 'Goodwill Adjustment Letter',
-    type: 'Goodwill',
-    content: `Dear [Creditor],\n\nI am writing to request a goodwill adjustment for the following account.\n\nAccount Number: [Account Number]\nReason: [Reason]\n\nThank you for your consideration.\n\nSincerely,\n[Client Name]`,
-    fields: ['Creditor', 'Account Number', 'Reason', 'Client Name'],
-    created: '2024-05-02',
-  },
-];
-
-const defaultHistory = [
-  {
-    id: 'h1',
-    templateName: 'Dispute Letter - Inaccurate Info',
-    generatedFor: 'John Smith',
-    date: '2024-06-01',
-    preview: 'To Whom It May Concern,\n\nI am writing to dispute the following information...'
-  },
-  {
-    id: 'h2',
-    templateName: 'Goodwill Adjustment Letter',
-    generatedFor: 'Sarah Lee',
-    date: '2024-06-02',
-    preview: 'Dear Capital One,\n\nI am writing to request a goodwill adjustment...'
-  },
-];
-
 export default function LetterTemplates() {
-  const [templates, setTemplates] = useState(defaultTemplates);
-  const [history, setHistory] = useState(defaultHistory);
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [history, setHistory] = useState<any[]>([]);
   const [showBuilder, setShowBuilder] = useState(false);
   const [editIndex, setEditIndex] = useState<number | null>(null);
   const [form, setForm] = useState({

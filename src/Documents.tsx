@@ -4,53 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import React from 'react';
 import { notificationService } from './services/notificationService';
-
-const mockDocuments = [
-  { 
-    id: '1',
-    name: 'Credit Report - John Doe',
-    type: 'PDF',
-    category: 'Credit Report',
-    client: 'John Doe',
-    uploaded: '2 days ago',
-    size: '2.4 MB',
-    status: 'Processed',
-    notes: 'Latest credit report from Experian'
-  },
-  { 
-    id: '2',
-    name: 'Dispute Letter - Jane Smith',
-    type: 'DOCX',
-    category: 'Dispute Letter',
-    client: 'Jane Smith',
-    uploaded: '1 week ago',
-    size: '1.2 MB',
-    status: 'Processed',
-    notes: 'Dispute letter for Chase credit card'
-  },
-  { 
-    id: '3',
-    name: 'ID Verification - Sarah Lee',
-    type: 'JPG',
-    category: 'Identification',
-    client: 'Sarah Lee',
-    uploaded: '3 days ago',
-    size: '3.5 MB',
-    status: 'Pending',
-    notes: 'Driver\'s license and utility bill'
-  },
-  { 
-    id: '4',
-    name: 'Payment Receipt - Mike D',
-    type: 'PDF',
-    category: 'Payment',
-    client: 'Mike D',
-    uploaded: '5 days ago',
-    size: '0.8 MB',
-    status: 'Processed',
-    notes: 'Payment confirmation for March'
-  },
-];
+import { db } from './firebase';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 
 const emptyDocument = { 
   id: '',
@@ -85,11 +40,22 @@ type Document = {
 
 export default function Documents() {
   const [loading, setLoading] = useState(true);
-  const [documents, setDocuments] = useState<typeof mockDocuments>([]);
+  const [documents, setDocuments] = useState<Document[]>([]);
   const [search, setSearch] = useState('');
-  const [selected, setSelected] = useState<typeof mockDocuments[0] | null>(null);
+  const [selected, setSelected] = useState<Document | null>(null);
   const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState({ ...emptyDocument });
+  const [form, setForm] = useState<Document>({
+    id: '',
+    name: '',
+    type: 'PDF',
+    category: '',
+    client: '',
+    uploaded: '',
+    size: '',
+    status: 'Pending',
+    notes: '',
+    url: '',
+  });
   const [formError, setFormError] = useState('');
   const [editIndex, setEditIndex] = useState<number | null>(null);
   const [checked, setChecked] = useState<string[]>([]);
@@ -100,21 +66,15 @@ export default function Documents() {
   const [docClient, setDocClient] = useState('');
   const [docCategory, setDocCategory] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [plan, setPlan] = useState('basic'); // For testing, default to 'basic'
-  const planOptions = ['basic', 'pro', 'enterprise'];
-  const user = { plan };
-
-  // Storage usage logic
-  const getStorageLimit = (plan: string) => (plan === 'enterprise' ? 100 : 50);
-  const storageUsed = 12.3; // Mocked value in GB, replace with real data later
-  const storageLimit = getStorageLimit(plan);
-  const storagePercent = Math.min((storageUsed / storageLimit) * 100, 100);
 
   useEffect(() => {
-    setTimeout(() => {
-      setDocuments(mockDocuments);
+    const fetchDocuments = async () => {
+      setLoading(true);
+      const docsSnapshot = await getDocs(collection(db, 'documents'));
+      setDocuments(docsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Document)));
       setLoading(false);
-    }, 1200);
+    };
+    fetchDocuments();
   }, []);
 
   const filtered = documents.filter(doc => {
@@ -186,31 +146,46 @@ export default function Documents() {
     }
   };
 
-  function handleAddDocument(e: React.FormEvent) {
+  async function handleAddDocument(e: React.FormEvent) {
     e.preventDefault();
     if (!form.name.trim() || !form.client.trim() || !form.category.trim()) {
       setFormError('Name, Client, and Category are required.');
       toast.error('Name, Client, and Category are required.');
       return;
     }
-    if (editIndex !== null) {
+    if (editIndex !== null && selected) {
       // Edit
-      setDocuments(documents => documents.map((d, i) => i === editIndex ? { ...form } : d));
+      await updateDoc(doc(db, 'documents', selected.id), form);
+      setDocuments(docs => docs.map(d => d.id === selected.id ? { ...form, id: selected.id } : d));
       toast.success('Document updated!');
     } else {
       // Add
-      setDocuments([{ ...form, id: Math.random().toString(36).substr(2, 9) }, ...documents]);
+      const docRef = await addDoc(collection(db, 'documents'), form);
+      setDocuments(docs => [{ ...form, id: docRef.id }, ...docs]);
       toast.success('Document added!');
     }
     setShowAdd(false);
-    setForm({ ...emptyDocument });
+    setForm({
+      id: '',
+      name: '',
+      type: 'PDF',
+      category: '',
+      client: '',
+      uploaded: '',
+      size: '',
+      status: 'Pending',
+      notes: '',
+      url: '',
+    });
     setFormError('');
     setEditIndex(null);
+    setSelected(null);
   }
 
-  function handleEdit(document: typeof mockDocuments[0], idx: number) {
+  function handleEdit(document: Document, idx: number) {
     setForm(document);
     setEditIndex(idx);
+    setSelected(document);
     setShowAdd(true);
   }
 
@@ -222,8 +197,11 @@ export default function Documents() {
     setChecked(checkedVal ? paginated.map(d => d.id) : checked.filter(e => !paginated.map(d => d.id).includes(e)));
   }
 
-  function handleBulkDelete() {
-    setDocuments(documents => documents.filter(d => !checked.includes(d.id)));
+  async function handleBulkDelete() {
+    for (const id of checked) {
+      await deleteDoc(doc(db, 'documents', id));
+    }
+    setDocuments(docs => docs.filter(d => !checked.includes(d.id)));
     setChecked([]);
     toast.success('Selected documents deleted!');
   }
@@ -245,7 +223,8 @@ export default function Documents() {
     }
   }
 
-  function handleDelete(id: string) {
+  async function handleDelete(id: string) {
+    await deleteDoc(doc(db, 'documents', id));
     setDocuments(docs => docs.filter(d => d.id !== id));
     toast.success('Document deleted!');
   }
@@ -293,349 +272,346 @@ export default function Documents() {
             />
             <Search className="absolute left-3 top-2.5 w-5 h-5 text-gray-400" />
           </div>
-          {/* Add any additional filters here if needed */}
         </motion.div>
-        {/* Plan dropdown for testing (remove in production) */}
-        <div className="flex items-center gap-3 mb-2">
-          <span className="px-2 py-1 rounded bg-gray-200 text-xs font-semibold uppercase">{plan}</span>
-          <select
-            value={plan}
-            onChange={e => setPlan(e.target.value)}
-            className="px-2 py-1 rounded border border-gray-300 text-xs bg-white"
-          >
-            {planOptions.map(opt => (
-              <option key={opt} value={opt}>{opt.charAt(0).toUpperCase() + opt.slice(1)}</option>
-            ))}
-          </select>
-          <span className="text-xs text-gray-400">(Testing only)</span>
-        </div>
-        {/* Storage usage info */}
-        <div className="mb-4">
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-gray-700 font-semibold">Storage Used:</span>
-            <span className="text-xs text-gray-600">{storageUsed} GB of {storageLimit} GB</span>
-            <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden max-w-xs">
-              <div
-                className="h-2 bg-indigo-500 rounded-full transition-all"
-                style={{ width: `${storagePercent}%` }}
-              ></div>
-            </div>
-          </div>
-        </div>
-        {/* Main Content */}
+
+        {/* Document List */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3, duration: 0.5 }}
-          className="bg-white rounded-2xl shadow-xl p-0.5"
+          className="bg-white rounded-xl shadow-sm overflow-hidden"
         >
           {loading ? (
-            <div className="space-y-4 p-6">
-              {[...Array(6)].map((_, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.1 + i * 0.07, duration: 0.4 }}
-                  className="h-12 w-full rounded-lg relative overflow-hidden bg-gray-100"
-                  style={{ position: 'relative' }}
-                >
-                  <div
-                    className="absolute inset-0"
-                    style={{
-                      background: 'linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%)',
-                      backgroundSize: '400px 100%',
-                      animation: 'shimmer 1.2s infinite',
-                    }}
-                  />
-                </motion.div>
+            <div className="p-8">
+              <div className="animate-pulse space-y-4">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="flex items-center space-x-4">
+                    <div className="h-12 w-12 bg-gray-200 rounded"></div>
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                      <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                    </div>
+                  </div>
               ))}
+              </div>
             </div>
-          ) : filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-gray-400">
-              <FilePlus className="w-16 h-16 text-indigo-200 mb-4" />
-              <div className="text-2xl font-semibold text-gray-500 mb-2">No documents found</div>
-              <div className="text-gray-400 mb-6">Upload your first document to get started.</div>
+          ) : documents.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="mx-auto w-24 h-24 text-gray-300">
+                <FilePlus className="w-full h-full" />
+              </div>
+              <h3 className="mt-4 text-lg font-medium text-gray-900">No documents</h3>
+              <p className="mt-2 text-sm text-gray-500">Get started by uploading your first document.</p>
+              <div className="mt-6">
               <button
-                className="flex items-center gap-2 px-6 py-2 rounded-full bg-indigo-600 text-white font-semibold shadow hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-400 focus:outline-none transition text-base"
                 onClick={() => setShowAdd(true)}
+                  className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
               >
-                <Plus className="w-5 h-5" /> Upload Document
+                  <Plus className="w-5 h-5 mr-2" />
+                  Upload Document
               </button>
+              </div>
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <motion.table className="w-full text-base bg-white rounded-2xl shadow-xl">
-                <thead>
-                  <tr className="text-gray-400 text-xs bg-gray-50">
-                    <th className="py-4 px-4 font-semibold tracking-wide">Name</th>
-                    <th className="text-left font-semibold py-4 px-4 tracking-wide">Type</th>
-                    <th className="text-left font-semibold py-4 px-4 tracking-wide">Category</th>
-                    <th className="text-left font-semibold py-4 px-4 tracking-wide">Client</th>
-                    <th className="text-left font-semibold py-4 px-4 tracking-wide">Status</th>
-                    <th className="text-left font-semibold py-4 px-4 tracking-wide">Uploaded</th>
-                    <th className="text-left font-semibold py-4 px-4 tracking-wide">Actions</th>
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <input
+                        type="checkbox"
+                        checked={allChecked}
+                        onChange={e => handleCheckAll(e.target.checked)}
+                        className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                      />
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
-                <tbody>
-                  <AnimatePresence>
+                <tbody className="bg-white divide-y divide-gray-200">
                     {paginated.map((doc, idx) => (
-                      <motion.tr
-                        key={doc.id}
-                        initial={{ opacity: 0, y: 12 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 12 }}
-                        transition={{ delay: 0.05 * idx, duration: 0.4 }}
-                        className="border-t border-gray-100 hover:bg-indigo-50 transition-colors group"
-                      >
-                        <td className="py-4 px-4 font-medium text-gray-900 whitespace-nowrap">{doc.name}</td>
-                        <td className="py-4 px-4 text-gray-700 whitespace-nowrap">{doc.type}</td>
-                        <td className="py-4 px-4 text-gray-700 whitespace-nowrap">{doc.category}</td>
-                        <td className="py-4 px-4 text-gray-700 whitespace-nowrap">{doc.client}</td>
-                        <td className="py-4 px-4 whitespace-nowrap">
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${doc.status === 'Processed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'} shadow-sm`}>{doc.status}</span>
+                    <tr key={doc.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <input
+                          type="checkbox"
+                          checked={checked.includes(doc.id)}
+                          onChange={e => handleCheck(doc.id, e.target.checked)}
+                          className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                        />
                         </td>
-                        <td className="py-4 px-4 text-gray-500 whitespace-nowrap">{doc.uploaded}</td>
-                        <td className="py-4 px-4 whitespace-nowrap">
-                          <div className="flex gap-2">
-                            <button className="p-2 rounded hover:bg-indigo-100 focus:bg-indigo-200 transition shadow-sm" title="View" onClick={() => setSelected(doc)}><Eye className="w-5 h-5 text-indigo-600" /></button>
-                            <button className="p-2 rounded hover:bg-red-100 focus:bg-red-200 transition shadow-sm" title="Delete" onClick={() => handleDelete(doc.id)}><Trash2 className="w-5 h-5 text-red-500" /></button>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-10 w-10">
+                            {getFileTypeIcon(doc.type)}
+                          </div>
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-gray-900">{doc.name}</div>
+                            <div className="text-sm text-gray-500">{doc.size}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{doc.type}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{doc.category}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{doc.client}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          doc.status === 'Processed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {doc.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div className="flex items-center space-x-3">
+                          <button
+                            onClick={() => window.open(doc.url, '_blank')}
+                            className="text-indigo-600 hover:text-indigo-900"
+                          >
+                            <Eye className="w-5 h-5" />
+                          </button>
+                          <button
+                            onClick={() => handleEdit(doc, idx)}
+                            className="text-blue-600 hover:text-blue-900"
+                          >
+                            <Edit className="w-5 h-5" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(doc.id)}
+                            className="text-red-600 hover:text-red-900"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
                           </div>
                         </td>
-                      </motion.tr>
+                    </tr>
                     ))}
-                  </AnimatePresence>
                 </tbody>
-              </motion.table>
+              </table>
             </div>
-          )}
-          {/* Pagination Controls */}
-          {!loading && totalPages > 1 && (
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4, duration: 0.4 }}
-              className="flex justify-center items-center gap-2 mt-8"
-            >
-              <button
-                className="px-3 py-2 rounded bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200 focus:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition"
-                disabled={page === 1}
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-              >
-                Previous
-              </button>
-              <span className="text-base text-gray-500">Page {page} of {totalPages}</span>
-              <button
-                className="px-3 py-2 rounded bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200 focus:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition"
-                disabled={page === totalPages}
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-              >
-                Next
-              </button>
-            </motion.div>
           )}
         </motion.div>
 
+        {/* Pagination */}
+        {documents.length > 0 && (
+            <motion.div
+            initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4, duration: 0.5 }}
+            className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6"
+            >
+            <div className="flex flex-1 justify-between sm:hidden">
+              <button
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Previous
+              </button>
+              <button
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Next
+                    </button>
+                  </div>
+            <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm text-gray-700">
+                  Showing <span className="font-medium">{(page - 1) * PAGE_SIZE + 1}</span> to{' '}
+                  <span className="font-medium">{Math.min(page * PAGE_SIZE, filtered.length)}</span> of{' '}
+                  <span className="font-medium">{filtered.length}</span> results
+                </p>
+                </div>
+              <div>
+                <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                    <button
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                    className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0"
+                    >
+                    <span className="sr-only">Previous</span>
+                    <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path fillRule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clipRule="evenodd" />
+                    </svg>
+                    </button>
+                  {[...Array(totalPages)].map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setPage(i + 1)}
+                      className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
+                        page === i + 1
+                          ? 'z-10 bg-indigo-600 text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600'
+                          : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0'
+                      }`}
+                    >
+                      {i + 1}
+                    </button>
+                  ))}
+                    <button
+                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                    disabled={page === totalPages}
+                    className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0"
+                  >
+                    <span className="sr-only">Next</span>
+                    <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
+                    </svg>
+                    </button>
+                </nav>
+                  </div>
+                </div>
+            </motion.div>
+          )}
+
         {/* Upload Modal */}
-        <AnimatePresence>
-          {showAdd && (
+        {showAdd && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+            className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
             >
+            <div className="fixed inset-0 z-10 overflow-y-auto">
+              <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
               <motion.div
-                initial={{ scale: 0.95, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.95, opacity: 0 }}
-                className="bg-white rounded-2xl shadow-xl w-full max-w-2xl"
-              >
-                <div className="p-6 border-b border-gray-100">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-semibold text-gray-900">Upload Document</h2>
-                    <button
-                      onClick={() => setShowAdd(false)}
-                      className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-                    >
-                      <X className="w-5 h-5 text-gray-500" />
-                    </button>
-                  </div>
-                </div>
-
-                <div
-                  className={`p-6 ${dragActive ? 'bg-indigo-50' : 'bg-white'}`}
-                  onDragEnter={handleDrag}
-                  onDragLeave={handleDrag}
-                  onDragOver={handleDrag}
-                  onDrop={handleDrop}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6"
                 >
-                  <div className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center">
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      className="hidden"
-                      multiple
-                      onChange={(e) => handleFileUpload(e.target.files)}
-                    />
-                    <Upload className="w-12 h-12 text-indigo-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Drop files here or click to upload</h3>
-                    <p className="text-gray-500 mb-4">Support for PDF, JPG, PNG up to 5MB</p>
+                  <div className="absolute right-0 top-0 hidden pr-4 pt-4 sm:block">
                     <button
-                      onClick={() => fileInputRef.current?.click()}
-                      className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-                    >
-                      Select Files
-                    </button>
-                  </div>
-
-                  {uploading && (
-                    <div className="mt-4 text-center">
-                      <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-600 border-t-transparent"></div>
-                      <p className="mt-2 text-gray-600">Uploading...</p>
-                    </div>
-                  )}
-                </div>
-
-                <div className="p-6 border-t border-gray-100">
-                  <div className="flex justify-end gap-3">
-                    <button
+                      type="button"
+                      className="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                       onClick={() => setShowAdd(false)}
-                      className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
                     >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={() => {
-                        setShowAdd(false);
-                        toast.success('Document uploaded successfully!');
-                      }}
-                      className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-                    >
-                      Upload
+                      <span className="sr-only">Close</span>
+                      <X className="h-6 w-6" />
                     </button>
                   </div>
+                  <div className="sm:flex sm:items-start">
+                    <div className="mt-3 text-center sm:mt-0 sm:text-left w-full">
+                      <h3 className="text-base font-semibold leading-6 text-gray-900">
+                        {editIndex !== null ? 'Edit Document' : 'Upload Document'}
+                      </h3>
+                      <div className="mt-4">
+                        <form onSubmit={handleAddDocument} className="space-y-4">
+                    <div>
+                            <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                              Name
+                            </label>
+                            <input
+                              type="text"
+                              id="name"
+                              value={form.name}
+                              onChange={e => setForm({ ...form, name: e.target.value })}
+                              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                            />
+                    </div>
+                    <div>
+                            <label htmlFor="client" className="block text-sm font-medium text-gray-700">
+                              Client
+                            </label>
+                            <input
+                              type="text"
+                              id="client"
+                              value={form.client}
+                              onChange={e => setForm({ ...form, client: e.target.value })}
+                              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                            />
+                    </div>
+                    <div>
+                            <label htmlFor="category" className="block text-sm font-medium text-gray-700">
+                              Category
+                            </label>
+                            <input
+                              type="text"
+                              id="category"
+                              value={form.category}
+                              onChange={e => setForm({ ...form, category: e.target.value })}
+                              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                            />
+                    </div>
+                    <div>
+                            <label htmlFor="notes" className="block text-sm font-medium text-gray-700">
+                              Notes
+                            </label>
+                            <textarea
+                              id="notes"
+                              value={form.notes}
+                              onChange={e => setForm({ ...form, notes: e.target.value })}
+                              rows={3}
+                              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                            />
+                    </div>
+                          {formError && (
+                            <p className="mt-2 text-sm text-red-600">{formError}</p>
+                          )}
+                          <div className="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
+                            <button
+                              type="submit"
+                              className="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 sm:ml-3 sm:w-auto"
+                            >
+                              {editIndex !== null ? 'Update' : 'Upload'}
+                            </button>
+                            <button
+                              type="button"
+                              className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto"
+                              onClick={() => setShowAdd(false)}
+                            >
+                              Cancel
+                            </button>
+                    </div>
+                        </form>
+                      </div>
+                      </div>
+                  </div>
+                </motion.div>
+                  </div>
+                </div>
+          </motion.div>
+        )}
+
+        {/* Drag and Drop Upload Area */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5, duration: 0.5 }}
+          className={`mt-4 border-2 border-dashed rounded-lg p-8 text-center ${
+            dragActive ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300'
+          }`}
+          onDragEnter={handleDrag}
+          onDragLeave={handleDrag}
+          onDragOver={handleDrag}
+          onDrop={handleDrop}
+        >
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            className="hidden"
+            onChange={e => handleFileUpload(e.target.files)}
+          />
+          <div className="space-y-2">
+            <Upload className="mx-auto h-12 w-12 text-gray-400" />
+            <div className="text-sm text-gray-600">
+                    <button
+                type="button"
+                className="font-medium text-indigo-600 hover:text-indigo-500"
+                onClick={() => fileInputRef.current?.click()}
+                    >
+                Upload a file
+                    </button>
+              {' '}or drag and drop
+                  </div>
+            <p className="text-xs text-gray-500">PDF, DOCX, JPG, PNG up to 10MB</p>
                 </div>
               </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Document Details Modal */}
-        <AnimatePresence>
-          {selected && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-            >
-              <motion.div
-                initial={{ scale: 0.95, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.95, opacity: 0 }}
-                className="bg-white rounded-2xl shadow-xl w-full max-w-2xl"
-              >
-                <div className="p-6 border-b border-gray-100">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-semibold text-gray-900">Document Details</h2>
-                    <button
-                      onClick={() => setSelected(null)}
-                      className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-                    >
-                      <X className="w-5 h-5 text-gray-500" />
-                    </button>
-                  </div>
-                </div>
-
-                <div className="p-6">
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Name</label>
-                      <p className="mt-1 text-gray-900">{selected.name}</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Type</label>
-                      <p className="mt-1 text-gray-900">{selected.type}</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Category</label>
-                      <p className="mt-1 text-gray-900">{selected.category}</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Client</label>
-                      <p className="mt-1 text-gray-900">{selected.client}</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Status</label>
-                      <p className="mt-1">
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${selected.status === 'Processed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                          {selected.status}
-                        </span>
-                      </p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Uploaded</label>
-                      <p className="mt-1 text-gray-900">{selected.uploaded}</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Notes</label>
-                      <p className="mt-1 text-gray-900">{selected.notes}</p>
-                    </div>
-                    {/* Versioning (Pro/Enterprise only) */}
-                    {(user.plan === 'pro' || user.plan === 'enterprise') ? (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">Version History</label>
-                        <div className="mt-1 text-gray-900">(Version history UI here)</div>
-                      </div>
-                    ) : (
-                      <div className="text-xs text-gray-400">Upgrade to Pro for version history</div>
-                    )}
-                    {/* Sharing (Pro/Enterprise only) */}
-                    {(user.plan === 'pro' || user.plan === 'enterprise') ? (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">Sharing</label>
-                        <div className="mt-1 text-gray-900">(Sharing UI here)</div>
-                      </div>
-                    ) : (
-                      <div className="text-xs text-gray-400">Upgrade to Pro for document sharing</div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="p-6 border-t border-gray-100">
-                  <div className="flex justify-end gap-3">
-                    <button
-                      onClick={() => setSelected(null)}
-                      className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                    >
-                      Close
-                    </button>
-                    <button
-                      onClick={() => {
-                        // Handle download
-                        toast.success('Document downloaded!');
-                      }}
-                      className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-                    >
-                      Download
-                    </button>
-                  </div>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Templates section (example) */}
-        <div className="mt-8">
-          <h2 className="text-lg font-semibold mb-2">Templates</h2>
-          {user.plan === 'basic' ? (
-            <div>Standard Templates (upgrade for custom templates)</div>
-          ) : (
-            <div>Custom Templates (Pro/Enterprise)</div>
-          )}
-        </div>
       </motion.div>
     </AnimatePresence>
   );

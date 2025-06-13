@@ -1,19 +1,12 @@
 import { useState, useEffect } from 'react';
 
-const analyticsData = {
-  leadConversion: 0,
-  disputeSuccess: 0,
-  totalLeads: 1,
-  totalDisputes: 1,
-};
-
 export default function Analytics() {
   const [loading, setLoading] = useState(true);
-  const [data, setData] = useState<typeof analyticsData | null>(null);
+  const [data, setData] = useState<any>(null);
 
   useEffect(() => {
     setTimeout(() => {
-      setData(analyticsData); // Set to null for empty state
+      setData(null); // Start with empty data
       setLoading(false);
     }, 1200);
   }, []);

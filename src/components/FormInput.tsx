@@ -1,4 +1,4 @@
-import React, { InputHTMLAttributes } from 'react';
+import React, { InputHTMLAttributes, forwardRef } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { FieldError } from 'react-hook-form';
 
@@ -10,7 +10,9 @@ interface FormInputProps extends InputHTMLAttributes<HTMLInputElement> {
   onTogglePassword?: () => void;
 }
 
-export const FormInput: React.FC<FormInputProps> = ({
+export const FormInput = forwardRef<HTMLInputElement, FormInputProps>(
+  (
+    {
   label,
   error,
   showPasswordToggle,
@@ -18,7 +20,9 @@ export const FormInput: React.FC<FormInputProps> = ({
   onTogglePassword,
   className = '',
   ...props
-}) => {
+    },
+    ref
+  ) => {
   const baseInputClasses = 'appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm';
   const errorClasses = error ? 'border-red-300 text-red-900 placeholder-red-300' : 'border-gray-300';
   const inputClasses = `${baseInputClasses} ${errorClasses} ${className}`;
@@ -31,6 +35,7 @@ export const FormInput: React.FC<FormInputProps> = ({
       <div className="mt-1 relative">
         <input
           {...props}
+            ref={ref}
           className={inputClasses}
           aria-invalid={error ? 'true' : 'false'}
           aria-describedby={error ? `${props.id}-error` : undefined}
@@ -56,4 +61,5 @@ export const FormInput: React.FC<FormInputProps> = ({
       )}
     </div>
   );
-}; 
+  }
+); 
