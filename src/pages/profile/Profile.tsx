@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
-import { User, Mail, Lock, Phone, MapPin } from 'lucide-react';
+import { User, Mail, Phone, MapPin } from 'lucide-react';
 
 const Profile: React.FC = () => {
   const user = useSelector((state: RootState) => state.auth.user);

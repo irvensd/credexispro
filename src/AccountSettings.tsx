@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Globe, Clock, Bell, Shield, Lock, Building2, CreditCard, Mail, Smartphone, KeyRound, UserCog, CheckCircle2 } from 'lucide-react';
+import { Globe, Bell, Shield, Lock, Building2, CreditCard, Mail, Smartphone, KeyRound, UserCog, CheckCircle2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function AccountSettings() {
@@ -16,7 +16,7 @@ export default function AccountSettings() {
     name: 'Acme Corp',
     address: '456 Business Rd, City, Country',
   });
-  const [plan, setPlan] = useState('Pro');
+  const [plan] = useState('Pro');
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
 

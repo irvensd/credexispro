@@ -16,8 +16,6 @@ import {
 import toast from 'react-hot-toast';
 
 export default function Dashboard() {
-  const [timeFilter, setTimeFilter] = useState('30d');
-
   const StatCard = ({ title, value, change, icon: Icon, trend, prefix = '', suffix = '' }: {
     title: string;
     value: number | string;
@@ -57,15 +55,6 @@ export default function Dashboard() {
       </div>
     </motion.div>
   );
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'High': return 'bg-red-100 text-red-800';
-      case 'Medium': return 'bg-yellow-100 text-yellow-800';
-      case 'Low': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
 
   return (
     <div className="p-6 max-w-[1600px] mx-auto space-y-8">

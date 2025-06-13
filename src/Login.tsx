@@ -3,7 +3,6 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-import { useAuth } from './hooks/useAuth';
 import { FormInput } from './components/FormInput';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { loginSchema, type LoginFormData } from './utils/validation';

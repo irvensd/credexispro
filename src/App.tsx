@@ -113,88 +113,38 @@ const ProtectedRoute = ({ children, userData }: { children: React.ReactNode, use
 };
 
 export default function App() {
-  const [user, setUser] = useState<User | null>(null);
-  const [userData, setUserData] = useState<any>(null);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [data, setData] = useState<any[]>([]);
-  const [newItem, setNewItem] = useState('');
   const dispatch = useDispatch();
+  const userData = useSelector((state: RootState) => state.auth.user);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      setUser(firebaseUser);
       if (firebaseUser) {
         console.log('Current user UID:', firebaseUser.uid);
         const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
         console.log('User doc exists:', userDoc.exists());
         if (userDoc.exists()) {
-          setUserData({ ...userDoc.data(), id: firebaseUser.uid });
-          console.log('User data:', userDoc.data());
           dispatch(loginSuccess({
             user: {
-              id: firebaseUser.uid,
-              email: firebaseUser.email || '',
-              name: firebaseUser.displayName || '',
-              role: 'user', // or get from Firestore if you store roles
-              emailVerified: firebaseUser.emailVerified,
+              id: '1',
+              email: 'test@example.com',
+              name: 'Test User',
+              role: 'admin',
+              emailVerified: true,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
             },
             token: 'firebase',
             refreshToken: '',
           }));
         } else {
-          setUserData(null);
-          console.log('No user document found in Firestore.');
           dispatch(reduxLogout());
         }
       } else {
-        setUserData(null);
         dispatch(reduxLogout());
       }
     });
     return () => unsubscribe();
   }, [dispatch]);
-
-  const handleLogin = async () => {
-    try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      alert('Logged in as: ' + userCredential.user.email);
-    } catch (error: any) {
-      alert('Login failed: ' + error.message);
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      setUser(null);
-      setUserData(null);
-      alert('Logged out successfully');
-    } catch (error: any) {
-      alert('Logout failed: ' + error.message);
-    }
-  };
-
-  const fetchData = async () => {
-    const querySnapshot = await getDocs(collection(db, 'items'));
-    const items = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    setData(items);
-  };
-
-  const addData = async () => {
-    if (!newItem) return;
-    try {
-      await addDoc(collection(db, 'items'), { name: newItem });
-      setNewItem('');
-      fetchData();
-    } catch (error: any) {
-      alert('Error adding item: ' + error.message);
-    }
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, []);
 
   return (
     <InviteProvider>

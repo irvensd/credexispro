@@ -1,4 +1,3 @@
-import React from 'react';
 import { Route } from 'react-router-dom';
 import PrivacyPolicy from '../pages/legal/PrivacyPolicy';
 import CookiePolicy from '../pages/legal/CookiePolicy';

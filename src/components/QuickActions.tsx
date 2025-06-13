@@ -1,14 +1,10 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
-import { useSettings } from '../hooks/useSettings';
 import { useTranslation } from '../hooks/useTranslation';
 
 const QuickActions: React.FC = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { user } = useAuth();
-  const { settings } = useSettings();
 
   return (
     <div className="flex flex-col space-y-2">

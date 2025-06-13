@@ -40,19 +40,6 @@ export function AlertsDropdown({ open }: { open: boolean }) {
   );
 }
 
-const appointmentsData = [
-  { icon: <PhoneCall className="w-5 h-5" />, client: 'John Doe', type: 'Phone Call', time: 'Today, 2:00pm' },
-  { icon: <MessageCircle className="w-5 h-5" />, client: 'Jane Smith', type: 'Consultation', time: 'Tomorrow, 10:00am' },
-  { icon: <Calendar className="w-5 h-5" />, client: 'Sarah Lee', type: 'Follow-up', time: 'Friday, 1:30pm' },
-];
-
-const activityData = [
-  { icon: <User className="w-5 h-5" />, user: 'Mike D', action: 'Added a new client: John Doe', time: '5m ago' },
-  { icon: <Zap className="w-5 h-5" />, user: 'Mike D', action: 'Filed a dispute for Jane Smith', time: '1h ago' },
-  { icon: <DollarSign className="w-5 h-5" />, user: 'Mike D', action: 'Recorded payment from Sarah Lee', time: '3h ago' },
-  { icon: <Mail className="w-5 h-5" />, user: 'Mike D', action: 'Sent a letter to Experian', time: 'Yesterday' },
-];
-
 const RecentActivity = () => {
   const [loading, setLoading] = useState(true);
   const [activities, setActivities] = useState<any[]>([]);
@@ -259,14 +246,12 @@ const PerformanceTrends = () => {
       }).length;
       // Revenue (last 30 days)
       let revenue = 0;
-      let revenueChange = 0;
       const paymentsSnap = await getDocs(collection(db, 'payments'));
       paymentsSnap.docs.forEach(doc => {
         const data = doc.data();
         if (data.date && new Date(data.date) >= lastMonth) {
           revenue += Number(data.amount) || 0;
         }
-        // Optionally, calculate revenueChange here if you have previous period data
       });
       setData([
         { label: 'Dispute Success', value: `${disputeSuccess}%`, trend: '', icon: <TrendingUp className="w-5 h-5" />, color: 'text-green-600', chart: 'bar' },

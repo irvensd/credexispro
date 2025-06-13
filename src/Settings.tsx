@@ -1,9 +1,8 @@
 import { useState } from 'react';
-import { User, Bell, Lock, CreditCard, Globe, Shield, HelpCircle, LogOut, Check, X, UserCircle, Sun, Moon, Globe2, Languages, Accessibility, Download, Trash2, Mail, MessageSquare, Smartphone, ShieldCheck, KeyRound, EyeOff, CheckCircle2 } from 'lucide-react';
+import { User, Bell, Lock, CreditCard, Globe, Shield, HelpCircle, LogOut, Check, X, UserCircle, Sun, Moon, Globe2, Languages, Accessibility, Download, Trash2, Mail, MessageSquare, Smartphone, ShieldCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link, useNavigate, Navigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { useAuth } from './contexts/AuthContext';
 import { db } from './firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 

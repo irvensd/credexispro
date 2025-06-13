@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BarChart2, Download, Calendar, TrendingUp, Users, DollarSign, AlertCircle } from 'lucide-react';
+import { Download, TrendingUp, Users, DollarSign, AlertCircle } from 'lucide-react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -12,7 +12,6 @@ import {
   ArcElement,
 } from 'chart.js';
 import { Line, Pie } from 'react-chartjs-2';
-import { chartOptions, lineChartOptions, pieChartOptions } from './config/chart';
 
 // Register ChartJS components
 ChartJS.register(
@@ -28,15 +27,6 @@ ChartJS.register(
 
 const Reports = () => {
   const [timeRange, setTimeRange] = useState('month');
-  const [isLoading, setIsLoading] = useState(false);
-
-  // Initialize analytics state as empty or zeroed objects
-  const [overview, setOverview] = useState({ totalClients: 0, activeDisputes: 0, monthlyRevenue: 0, successRate: 0 });
-  const [clientMetrics, setClientMetrics] = useState({ newClients: 0, activeClients: 0, inactiveClients: 0, averageScore: 0 });
-  const [disputeMetrics, setDisputeMetrics] = useState({ totalDisputes: 0, resolvedDisputes: 0, pendingDisputes: 0, successRate: 0 });
-  const [revenueMetrics, setRevenueMetrics] = useState({ monthlyRevenue: 0, yearlyRevenue: 0, averageClientValue: 0, revenueGrowth: 0 });
-  const [disputeTypes, setDisputeTypes] = useState({ creditCard: 0, medical: 0, student: 0, other: 0 });
-  const [scoreImprovements, setScoreImprovements] = useState({ labels: [], datasets: [] });
 
   const handleExport = () => {
     // Implement export functionality

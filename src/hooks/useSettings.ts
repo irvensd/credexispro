@@ -3,7 +3,6 @@ import type { RootState } from '../store';
 import {
   updateTheme,
   updateNotifications,
-  updateLanguage,
   setLoading,
   setError,
 } from '../store/slices/settingsSlice';

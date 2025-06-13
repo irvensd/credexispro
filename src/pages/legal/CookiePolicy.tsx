@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Cookie, Settings, Shield, AlertCircle, CheckCircle } from 'lucide-react';
+import { Settings, Shield, AlertCircle, CheckCircle } from 'lucide-react';
 
 const CookiePolicy: React.FC = () => {
   const cookieTypes = [

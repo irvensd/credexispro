@@ -10,16 +10,6 @@ const growthData6 = [
   { month: 'Jun', value: 10 },
 ];
 
-const growthData12 = [
-  { month: 'Jul', value: 1 },
-  { month: 'Aug', value: 2 },
-  { month: 'Sep', value: 2 },
-  { month: 'Oct', value: 3 },
-  { month: 'Nov', value: 4 },
-  { month: 'Dec', value: 5 },
-  ...growthData6,
-];
-
 export default function ClientGrowth() {
   const [range, setRange] = useState<'6m' | '1y'>('6m');
   const [loading, setLoading] = useState(true);

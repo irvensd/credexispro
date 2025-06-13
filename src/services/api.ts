@@ -1,6 +1,5 @@
 import { environment } from '../config/environment';
 import { cache } from '../utils/cache';
-import { logger } from '../utils/logger';
 import { monitoring } from '../utils/monitoring';
 
 interface RequestOptions {

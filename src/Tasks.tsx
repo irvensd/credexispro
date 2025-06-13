@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Eye, Edit, Trash2, X, CheckCircle2, Clock, AlertCircle, Calendar as LucideCalendar, ClipboardPlus } from 'lucide-react';
+import { Search, Eye, Edit, Trash2, X, CheckCircle2, Clock, AlertCircle, ClipboardPlus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { Calendar as BigCalendar, dateFnsLocalizer } from 'react-big-calendar';
@@ -79,9 +79,6 @@ const emptyTask = {
 
 const PAGE_SIZE = 10;
 
-// Add shimmer skeleton CSS
-const shimmer = `\n  @keyframes shimmer {\n    0% { background-position: -400px 0; }\n    100% { background-position: 400px 0; }\n  }\n`;
-
 export default function Tasks() {
   const [loading, setLoading] = useState(true);
   const [tasks, setTasks] = useState<typeof mockTasks>([]);
@@ -94,7 +91,6 @@ export default function Tasks() {
   const [checked, setChecked] = useState<string[]>([]);
   const [page, setPage] = useState(1);
   const [filter, setFilter] = useState<'all' | 'pending' | 'in-progress' | 'completed'>('all');
-  const [view, setView] = useState<'list' | 'calendar'>('list');
 
   useEffect(() => {
     setTimeout(() => {
@@ -124,7 +120,6 @@ export default function Tasks() {
 
   // Bulk actions
   const allChecked = paginated.length > 0 && paginated.every(t => checked.includes(t.id));
-  const someChecked = paginated.some(t => checked.includes(t.id));
 
   // Calendar events
   const calendarEvents = filtered.map(task => ({
@@ -282,170 +277,153 @@ export default function Tasks() {
           transition={{ delay: 0.3, duration: 0.5 }}
           className="bg-white rounded-2xl shadow-xl p-0.5"
         >
-          {view === 'list' ? (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="bg-gray-50 border-b border-gray-100">
-                      <th className="px-6 py-3 text-left">
-                        <input
-                          type="checkbox"
-                          checked={allChecked}
-                          onChange={(e) => handleCheckAll(e.target.checked)}
-                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        />
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-gray-50 border-b border-gray-100">
+                    <th className="px-6 py-3 text-left">
+                      <input
+                        type="checkbox"
+                        checked={allChecked}
+                        onChange={(e) => handleCheckAll(e.target.checked)}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {loading ? (
+                    <tr>
+                      <td colSpan={8} className="px-6 py-4">
+                        <div className="animate-pulse flex space-x-4">
+                          <div className="flex-1 space-y-4 py-1">
+                            {[...Array(5)].map((_, i) => (
+                              <div key={i} className="h-12 bg-gray-100 rounded"></div>
+                            ))}
+                          </div>
+                        </div>
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {loading ? (
-                      <tr>
-                        <td colSpan={8} className="px-6 py-4">
-                          <div className="animate-pulse flex space-x-4">
-                            <div className="flex-1 space-y-4 py-1">
-                              {[...Array(5)].map((_, i) => (
-                                <div key={i} className="h-12 bg-gray-100 rounded"></div>
-                              ))}
+                  ) : paginated.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
+                        No tasks found
+                      </td>
+                    </tr>
+                  ) : (
+                    paginated.map((task, idx) => (
+                      <tr key={task.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4">
+                          <input
+                            type="checkbox"
+                            checked={checked.includes(task.id)}
+                            onChange={(e) => handleCheck(task.id, e.target.checked)}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center">
+                            <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium">
+                              {task.title.charAt(0)}
+                            </div>
+                            <div className="ml-3">
+                              <div className="font-medium text-gray-900">{task.title}</div>
+                              <div className="text-sm text-gray-500">ID: {task.id}</div>
                             </div>
                           </div>
                         </td>
-                      </tr>
-                    ) : paginated.length === 0 ? (
-                      <tr>
-                        <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
-                          No tasks found
+                        <td className="px-6 py-4">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            {task.type}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-900">{task.client}</td>
+                        <td className="px-6 py-4">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            task.status === 'Completed' ? 'bg-green-100 text-green-800' :
+                            task.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
+                            task.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {getStatusIcon(task.status)}
+                            {task.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            task.priority === 'High' ? 'bg-red-100 text-red-800' :
+                            task.priority === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-green-100 text-green-800'
+                          }`}>
+                            {task.priority}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-900">{task.dueDate}</td>
+                        <td className="px-6 py-4">
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => setSelected(task)}
+                              className="text-blue-600 hover:text-blue-800"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleEdit(task, idx)}
+                              className="text-yellow-600 hover:text-yellow-800"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                setTasks(tasks.filter(t => t.id !== task.id));
+                                toast.success('Task deleted!');
+                              }}
+                              className="text-red-600 hover:text-red-800"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
-                    ) : (
-                      paginated.map((task, idx) => (
-                        <tr key={task.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4">
-                            <input
-                              type="checkbox"
-                              checked={checked.includes(task.id)}
-                              onChange={(e) => handleCheck(task.id, e.target.checked)}
-                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                            />
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="flex items-center">
-                              <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium">
-                                {task.title.charAt(0)}
-                              </div>
-                              <div className="ml-3">
-                                <div className="font-medium text-gray-900">{task.title}</div>
-                                <div className="text-sm text-gray-500">ID: {task.id}</div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                              {task.type}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-900">{task.client}</td>
-                          <td className="px-6 py-4">
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              task.status === 'Completed' ? 'bg-green-100 text-green-800' :
-                              task.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
-                              task.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-gray-100 text-gray-800'
-                            }`}>
-                              {getStatusIcon(task.status)}
-                              {task.status}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4">
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              task.priority === 'High' ? 'bg-red-100 text-red-800' :
-                              task.priority === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-green-100 text-green-800'
-                            }`}>
-                              {task.priority}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-500">{formatDate(task.dueDate)}</td>
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-2">
-                              <button
-                                onClick={() => setSelected(task)}
-                                className="p-1 text-gray-400 hover:text-gray-600"
-                              >
-                                <Eye size={20} />
-                              </button>
-                              <button
-                                onClick={() => handleEdit(task, idx)}
-                                className="p-1 text-gray-400 hover:text-gray-600"
-                              >
-                                <Edit size={20} />
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setTasks(tasks.filter(t => t.id !== task.id));
-                                  toast.success('Task deleted!');
-                                }}
-                                className="p-1 text-gray-400 hover:text-red-600 transition-colors"
-                              >
-                                <Trash2 size={20} />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
 
-              {/* Pagination */}
-              {!loading && paginated.length > 0 && (
-                <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between">
-                  <div className="text-sm text-gray-500">
-                    Showing {((page - 1) * PAGE_SIZE) + 1} to {Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length} tasks
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setPage(p => Math.max(1, p - 1))}
-                      disabled={page === 1}
-                      className="px-3 py-1 rounded-lg border border-gray-200 text-sm disabled:opacity-50"
-                    >
-                      Previous
-                    </button>
-                    <button
-                      onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                      disabled={page === totalPages}
-                      className="px-3 py-1 rounded-lg border border-gray-200 text-sm disabled:opacity-50"
-                    >
-                      Next
-                    </button>
-                  </div>
+            {/* Pagination */}
+            {!loading && paginated.length > 0 && (
+              <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between">
+                <div className="text-sm text-gray-500">
+                  Showing {((page - 1) * PAGE_SIZE) + 1} to {Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length} tasks
                 </div>
-              )}
-            </div>
-          ) : (
-            <div className="h-[600px] sm:h-[700px]">
-              <BigCalendar
-                localizer={localizer}
-                events={calendarEvents}
-                startAccessor="start"
-                endAccessor="end"
-                style={{ height: '100%' }}
-                views={['month', 'week', 'day']}
-                defaultView="month"
-                onSelectEvent={(event: any) => {
-                  setSelected(event.resource);
-                }}
-              />
-            </div>
-          )}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                    className="px-3 py-1 rounded-lg border border-gray-200 text-sm disabled:opacity-50"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                    disabled={page === totalPages}
+                    className="px-3 py-1 rounded-lg border border-gray-200 text-sm disabled:opacity-50"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </motion.div>
         {/* Task Details Modal */}
         {selected && (

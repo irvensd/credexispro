@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { Menu, ChevronLeft, Home, Users, FileText, Briefcase, ListChecks, CreditCard, File, Star, Megaphone, Wrench, Settings, BookOpen, X, Clock, Target, Award, BarChart2 } from 'lucide-react';
+import { Menu, ChevronLeft, Home, Users, FileText, ListChecks, CreditCard, File, Star, Megaphone, Wrench, Settings, BookOpen, X, Clock, Target, Award, BarChart2 } from 'lucide-react';
 
 const navItems: { label: string; path: string; icon: React.ReactNode; badge?: string }[] = [
   { label: 'Dashboard', path: '/dashboard', icon: <Home className="w-5 h-5" /> },

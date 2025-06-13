@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import type { Invoice } from './types/Invoice';
 import type { Client } from './types/Client';
-import { Search, Eye, Edit, Trash2, X, FileText, File, FileType, FileImage, FileArchive, Plus, FilePlus, Upload } from 'lucide-react';
+import { Search } from 'lucide-react';
 
 export default function Invoices() {
-  const [clients, setClients] = useState<Client[]>([]);
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [clients] = useState<Client[]>([]);
+  const [invoices] = useState<Invoice[]>([]);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bell, Lock, Moon, Globe, Shield } from 'lucide-react';
+import { Bell, Shield } from 'lucide-react';
 
 const Settings: React.FC = () => {
   const [notifications, setNotifications] = useState({

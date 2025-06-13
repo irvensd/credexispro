@@ -2,12 +2,6 @@ import { useState, useCallback } from 'react';
 
 type ValidationRule<T> = (value: T) => string | undefined;
 
-interface FormField<T> {
-  value: T;
-  error?: string;
-  touched: boolean;
-}
-
 interface UseFormOptions<T> {
   initialValues: T;
   validationRules?: Partial<Record<keyof T, ValidationRule<T[keyof T]>>>;

@@ -54,7 +54,7 @@ export default function LetterTemplates() {
     setSelectedTemplate(template);
     // Set default preview data
     const data: { [key: string]: string } = {};
-    template.fields.forEach(f => { data[f] = f + ' Example'; });
+    template.fields.forEach((f: string) => { data[f] = f + ' Example'; });
     setPreviewData(data);
     setShowPreview(true);
   }
@@ -67,12 +67,6 @@ export default function LetterTemplates() {
       result = result.replace(new RegExp(`\\[${key.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}\\]`, 'g'), value);
     });
     return result;
-  }
-
-  // Automated generation by dispute type
-  function handleAutoGenerate(type: string) {
-    const found = templates.find(t => t.type === type);
-    if (found) handlePreview(found);
   }
 
   // Save to history
@@ -291,11 +285,11 @@ export default function LetterTemplates() {
                 </button>
                 <div className="font-bold text-lg text-gray-900 mb-4">Letter Preview</div>
                 <div className="mb-4">
-                  {selectedTemplate.fields.map(field => (
+                  {selectedTemplate.fields.map((field: string) => (
                     <div key={field} className="mb-2">
-                      <label className="block text-xs text-gray-500 mb-1">{field}</label>
+                      <label className="block text-xs font-semibold mb-1">{field}</label>
                       <input
-                        className="w-full border rounded px-3 py-2 text-sm"
+                        className="w-full border rounded px-2 py-1 text-sm"
                         value={previewData[field] || ''}
                         onChange={e => setPreviewData(d => ({ ...d, [field]: e.target.value }))}
                       />

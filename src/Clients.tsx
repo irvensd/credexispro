@@ -4,7 +4,6 @@ import { useTranslation } from './hooks/useTranslation';
 import { useClients } from './hooks/useClients';
 import AddEditClientModal from './components/AddEditClientModal';
 import { Search } from 'lucide-react';
-import type { Client } from './types/Client';
 
 const Clients: React.FC = () => {
   const navigate = useNavigate();

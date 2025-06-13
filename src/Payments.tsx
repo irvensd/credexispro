@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Eye, Edit, Trash2, X, DollarSign, CreditCard, Building2, CheckCircle2, AlertCircle, Wallet, Plus } from 'lucide-react';
+import { Search, Eye, Trash2, X, DollarSign, CreditCard, Building2, CheckCircle2, AlertCircle, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 
@@ -15,9 +15,6 @@ const emptyPayment = {
 };
 
 const PAGE_SIZE = 10;
-
-// Add shimmer skeleton CSS
-const shimmer = `\n  @keyframes shimmer {\n    0% { background-position: -400px 0; }\n    100% { background-position: 400px 0; }\n  }\n`;
 
 export default function Payments() {
   const [loading, setLoading] = useState(true);
@@ -58,10 +55,6 @@ export default function Payments() {
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  // Bulk actions
-  const allChecked = paginated.length > 0 && paginated.every(p => checked.includes(p.id));
-  const someChecked = paginated.some(p => checked.includes(p.id));
-
   function handleAddPayment(e: React.FormEvent) {
     e.preventDefault();
     if (!form.client.trim() || !form.amount || !form.date) {
@@ -87,26 +80,6 @@ export default function Payments() {
     setForm({ ...emptyPayment });
     setFormError('');
     setEditIndex(null);
-  }
-
-  function handleEdit(payment: any, idx: number) {
-    setForm(payment);
-    setEditIndex(idx);
-    setShowAdd(true);
-  }
-
-  function handleCheck(id: string, checkedVal: boolean) {
-    setChecked(prev => checkedVal ? [...prev, id] : prev.filter(e => e !== id));
-  }
-
-  function handleCheckAll(checkedVal: boolean) {
-    setChecked(checkedVal ? paginated.map(p => p.id) : checked.filter(e => !paginated.map(p => p.id).includes(e)));
-  }
-
-  function handleBulkDelete() {
-    setPayments(payments => payments.filter(p => !checked.includes(p.id)));
-    setChecked([]);
-    toast.success('Selected payments deleted!');
   }
 
   function getStatusIcon(status: string) {

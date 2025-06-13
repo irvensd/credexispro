@@ -5,7 +5,6 @@ import { useAuth } from './contexts/AuthContext';
 const roles = ['admin', 'manager', 'user'];
 const plans = ['basic', 'pro', 'enterprise'];
 const orgStatuses = ['active', 'suspended'];
-const userStatuses = ['active', 'suspended'];
 
 // Initialize all related state as empty arrays or objects
 const permissionKeys = [
@@ -19,7 +18,6 @@ const permissionKeys = [
   'manageRoles',
 ] as const;
 type PermissionKey = typeof permissionKeys[number];
-const defaultRolePermissions: Record<string, boolean> = {};
 
 const permissionLabels: Record<PermissionKey, string> = {
   viewUsers: 'View Users',
@@ -57,40 +55,6 @@ function exportToCSV(filename: string, rows: any[], columns: string[], headers: 
   document.body.removeChild(link);
 }
 
-function maskKey(key: string) {
-  return key.slice(0, 4) + '••••••••' + key.slice(-4);
-}
-
-const mockApiKeys = [
-  {
-    id: 'k1',
-    orgId: 'org1',
-    name: 'Primary Key',
-    key: 'sk_live_1234567890abcdef',
-    createdAt: '2024-06-01T09:00:00Z',
-    lastUsed: '2024-06-01T10:30:00Z',
-    status: 'active',
-  },
-  {
-    id: 'k2',
-    orgId: 'org1',
-    name: 'Dev Key',
-    key: 'sk_test_abcdef1234567890',
-    createdAt: '2024-05-20T12:00:00Z',
-    lastUsed: '2024-05-28T15:00:00Z',
-    status: 'revoked',
-  },
-  {
-    id: 'k3',
-    orgId: 'org2',
-    name: 'Integration Key',
-    key: 'sk_live_0987fedcba654321',
-    createdAt: '2024-06-01T08:00:00Z',
-    lastUsed: '2024-06-01T09:00:00Z',
-    status: 'active',
-  },
-];
-
 export default function AdminPanel() {
   const { invites, addInvite, removeInvite } = useInvites();
   const { setUser } = useAuth();
@@ -105,16 +69,13 @@ export default function AdminPanel() {
   const [showInviteUser, setShowInviteUser] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('user');
-  const [inviteLink, setInviteLink] = useState('');
   const [sortField, setSortField] = useState<string>('');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
-  const [inviteHistory, setInviteHistory] = useState<any[]>([]);
   const [selectedOrg, setSelectedOrg] = useState('');
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [selectedOrgs, setSelectedOrgs] = useState<string[]>([]);
-  const [showBulkActions, setShowBulkActions] = useState(false);
   const [userPage, setUserPage] = useState(1);
   const [userPageSize, setUserPageSize] = useState(10);
   const [orgPage, setOrgPage] = useState(1);
@@ -128,7 +89,6 @@ export default function AdminPanel() {
   const [activityActionFilter, setActivityActionFilter] = useState('');
   const [activityActorFilter, setActivityActorFilter] = useState('');
   const [activityTargetFilter, setActivityTargetFilter] = useState('');
-  const [sessions, setSessions] = useState<any[]>([]);
   const [sessionSearch, setSessionSearch] = useState('');
   const [sessionUserFilter, setSessionUserFilter] = useState('');
   const [sessionDeviceFilter, setSessionDeviceFilter] = useState('');
@@ -145,10 +105,6 @@ export default function AdminPanel() {
   const [orgSettingsEditMode, setOrgSettingsEditMode] = useState(false);
   const [apiKeys, setApiKeys] = useState<any[]>([]);
   const [selectedApiOrgId, setSelectedApiOrgId] = useState('');
-  const [showCreateApiKey, setShowCreateApiKey] = useState(false);
-  const [newApiKeyName, setNewApiKeyName] = useState('');
-  const [newApiKey, setNewApiKey] = useState('');
-  const [copiedKeyId, setCopiedKeyId] = useState('');
 
   // Flatten all users for the user table
   const allUsers = orgs.flatMap(org => org.members.map((m: any) => ({ ...m, org: org.name, organizationId: org.id })));
@@ -322,13 +278,6 @@ export default function AdminPanel() {
     invite.org.toLowerCase().includes(searchInvite.toLowerCase())
   );
 
-  // Filter invite history
-  const filteredInviteHistory = inviteHistory.filter(invite =>
-    invite.email.toLowerCase().includes(searchInvite.toLowerCase()) ||
-    invite.role.toLowerCase().includes(searchInvite.toLowerCase()) ||
-    invite.org.toLowerCase().includes(searchInvite.toLowerCase())
-  );
-
   // Handle bulk selection
   const handleSelectAll = (type: 'users' | 'orgs') => {
     if (type === 'users') {
@@ -352,56 +301,6 @@ export default function AdminPanel() {
       setSelectedOrgs(prev => 
         prev.includes(id) ? prev.filter((i: any) => i !== id) : [...prev, id]
       );
-    }
-  };
-
-  // Handle bulk user actions
-  const handleBulkUserAction = (action: 'delete' | 'suspend' | 'activate') => {
-    if (selectedUsers.length === 0) return;
-
-    const actionText = action === 'delete' ? 'delete' : 
-                      action === 'suspend' ? 'suspend' : 'activate';
-    
-    if (window.confirm(`Are you sure you want to ${actionText} ${selectedUsers.length} selected users?`)) {
-      setOrgs(prevOrgs => prevOrgs.map(org => ({
-        ...org,
-        members: org.members
-          .map((member: any) => {
-            if (selectedUsers.includes(member.id)) {
-              if (action === 'delete') return null;
-              return { ...member, status: action === 'suspend' ? 'suspended' : 'active' };
-            }
-            return member;
-          })
-          .filter((member): member is NonNullable<typeof member> => member !== null)
-      })));
-      
-      showSuccessMessage(`Successfully ${actionText}ed ${selectedUsers.length} users`);
-      setSelectedUsers([]);
-    }
-  };
-
-  // Handle bulk org actions
-  const handleBulkOrgAction = (action: 'delete' | 'suspend' | 'activate') => {
-    if (selectedOrgs.length === 0) return;
-
-    const actionText = action === 'delete' ? 'delete' : 
-                      action === 'suspend' ? 'suspend' : 'activate';
-    
-    if (window.confirm(`Are you sure you want to ${actionText} ${selectedOrgs.length} selected organizations?`)) {
-      setOrgs(prevOrgs => prevOrgs
-        .map((org: any) => {
-          if (selectedOrgs.includes(org.id)) {
-            if (action === 'delete') return null;
-            return { ...org, status: action === 'suspend' ? 'suspended' : 'active' };
-          }
-          return org;
-        })
-        .filter((org): org is NonNullable<typeof org> => org !== null)
-      );
-      
-      showSuccessMessage(`Successfully ${actionText}ed ${selectedOrgs.length} organizations`);
-      setSelectedOrgs([]);
     }
   };
 
@@ -477,43 +376,6 @@ export default function AdminPanel() {
     const org = orgs.find((o: any) => o.id === selectedOrgSettingsId);
     setOrgSettingsDraft(org ? { ...org } : null);
     setOrgSettingsEditMode(false);
-  };
-
-  // Filtered API keys for selected org
-  const filteredApiKeys = apiKeys.filter((k: any) => k.orgId === selectedApiOrgId);
-
-  // Create API key handler
-  const handleCreateApiKey = (e: React.FormEvent) => {
-    e.preventDefault();
-    const key = 'sk_' + Math.random().toString(36).slice(2, 18);
-    const newKey = {
-      id: Math.random().toString(36).slice(2, 10),
-      orgId: selectedApiOrgId,
-      name: newApiKeyName,
-      key,
-      createdAt: new Date().toISOString(),
-      lastUsed: '',
-      status: 'active',
-    };
-    setApiKeys(prev => [newKey, ...prev]);
-    setShowCreateApiKey(false);
-    setNewApiKeyName('');
-    setNewApiKey(key);
-    setTimeout(() => setNewApiKey(''), 10000);
-  };
-
-  // Revoke API key handler
-  const handleRevokeApiKey = (id: string) => {
-    if (window.confirm('Are you sure you want to revoke this API key?')) {
-      setApiKeys(prev => prev.map((k: any) => k.id === id ? { ...k, status: 'revoked' } : k));
-    }
-  };
-
-  // Copy API key handler
-  const handleCopyApiKey = (key: string, id: string) => {
-    navigator.clipboard.writeText(key);
-    setCopiedKeyId(id);
-    setTimeout(() => setCopiedKeyId(''), 2000);
   };
 
   const filteredSessions: any[] = [];
@@ -1031,7 +893,7 @@ export default function AdminPanel() {
                 </tr>
               </thead>
               <tbody>
-                {filteredInviteHistory.map((invite: any) => (
+                {filteredInvites.map((invite: any) => (
                   <tr key={invite.id} className="border-t">
                     <td className="p-2">{invite.email}</td>
                     <td className="p-2 capitalize">{invite.role}</td>
@@ -1513,11 +1375,6 @@ export default function AdminPanel() {
                 <button type="button" onClick={() => setShowInviteUser(false)} className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">Cancel</button>
               </div>
             </form>
-            {inviteLink && (
-              <div className="mt-4 p-2 bg-gray-50 rounded border text-xs">
-                <span className="font-semibold">Invite Link:</span> <a href={inviteLink} target="_blank" rel="noopener noreferrer" className="text-indigo-600 underline">{inviteLink}</a>
-              </div>
-            )}
           </div>
         </div>
       )}
