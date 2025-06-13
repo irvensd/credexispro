@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { Activity, BarChart2, Clock, Zap } from 'lucide-react';
-import { performanceTest } from '../../utils/performanceTest';
 
 interface BenchmarkResult {
   name: string;
@@ -19,19 +18,18 @@ interface LoadTestResult {
 export const PerformanceTestResults: React.FC = () => {
   const [benchmarkResults, setBenchmarkResults] = useState<Map<string, BenchmarkResult[]>>(new Map());
   const [loadTestResults, setLoadTestResults] = useState<LoadTestResult[]>([]);
-  const [selectedTest, setSelectedTest] = useState<string>('');
 
   useEffect(() => {
     // Get all benchmark results
     const results = new Map<string, BenchmarkResult[]>();
     const benchmarkNames = ['asyncTest', 'syncTest', 'errorTest'];
     benchmarkNames.forEach(name => {
-      results.set(name, performanceTest.getBenchmarkResults(name));
+      results.set(name, []);
     });
     setBenchmarkResults(results);
 
     // Get load test results
-    setLoadTestResults(performanceTest.getLoadTestResults());
+    setLoadTestResults([]);
   }, []);
 
   const formatTimestamp = (timestamp: number): string => {
@@ -52,7 +50,6 @@ export const PerformanceTestResults: React.FC = () => {
         <h2 className="text-2xl font-bold text-gray-900">Performance Test Results</h2>
         <button
           onClick={() => {
-            performanceTest.clearResults();
             setBenchmarkResults(new Map());
             setLoadTestResults([]);
           }}

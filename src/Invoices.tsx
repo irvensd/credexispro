@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { Invoice } from './types/Invoice';
 import type { Client } from './types/Client';
+import { Search, Eye, Edit, Trash2, X, FileText, File, FileType, FileImage, FileArchive, Plus, FilePlus, Upload } from 'lucide-react';
 
 export default function Invoices() {
   const [clients, setClients] = useState<Client[]>([]);
@@ -9,7 +10,7 @@ export default function Invoices() {
   const [statusFilter, setStatusFilter] = useState('');
 
   const filtered = invoices.filter(inv => {
-    const client = clients.find(c => c.id === inv.clientId);
+    const client = clients.find(c => c.id === String(inv.clientId));
     const clientName = client ? `${client.firstName} ${client.lastName}` : '';
     const matchesSearch =
       inv.invoiceNumber.toLowerCase().includes(search.toLowerCase()) ||
@@ -73,7 +74,7 @@ export default function Invoices() {
           </thead>
           <tbody>
             {filtered.map(inv => {
-                const client = clients.find(c => c.id === inv.clientId);
+                const client = clients.find(c => c.id === String(inv.clientId));
               return (
                 <tr key={inv.id} className="border-t border-gray-100 hover:bg-indigo-50 transition-colors">
                   <td className="py-3 px-4 font-medium text-gray-900">{inv.invoiceNumber}</td>

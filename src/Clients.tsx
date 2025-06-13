@@ -75,7 +75,6 @@ export default function Clients() {
 
   useEffect(() => {
     fetchClients();
-    // eslint-disable-next-line
   }, []);
 
   // Filter clients based on search and status

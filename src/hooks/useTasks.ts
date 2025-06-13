@@ -1,7 +1,5 @@
-import { useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import type { RootState } from '../store';
-import type { Task, TaskTemplate, TaskFilter } from '../types/task';
+import type { AppDispatch, RootState } from '../store';
 import {
   fetchTasks,
   createTask,
@@ -10,85 +8,58 @@ import {
   fetchTemplates,
   createTemplate,
   setSelectedTask,
-  setFilters,
-  clearFilters,
+  clearError
 } from '../store/features/taskSlice';
+import type { Task, TaskTemplate, TaskFilter } from '../types/task';
 
 export const useTasks = () => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const {
     tasks,
-    templates,
     selectedTask,
+    templates,
     loading,
-    error,
-    filters,
+    error
   } = useSelector((state: RootState) => state.tasks);
 
-  const loadTasks = useCallback(
-    (filters: TaskFilter) => {
-      dispatch(fetchTasks(filters));
-    },
-    [dispatch]
-  );
+  const loadTasks = (filters: TaskFilter) => {
+    dispatch(fetchTasks(filters));
+  };
 
-  const addTask = useCallback(
-    (task: Partial<Task>) => {
-      return dispatch(createTask(task));
-    },
-    [dispatch]
-  );
+  const addTask = async (task: Partial<Task>) => {
+    return dispatch(createTask(task));
+  };
 
-  const editTask = useCallback(
-    (id: string, task: Partial<Task>) => {
-      return dispatch(updateTask({ id, task }));
-    },
-    [dispatch]
-  );
+  const editTask = async (id: string, task: Partial<Task>) => {
+    return dispatch(updateTask({ id, task }));
+  };
 
-  const removeTask = useCallback(
-    (id: string) => {
-      return dispatch(deleteTask(id));
-    },
-    [dispatch]
-  );
+  const removeTask = async (id: string) => {
+    return dispatch(deleteTask(id));
+  };
 
-  const loadTemplates = useCallback(() => {
+  const loadTemplates = () => {
     dispatch(fetchTemplates());
-  }, [dispatch]);
+  };
 
-  const addTemplate = useCallback(
-    (template: Partial<TaskTemplate>) => {
-      return dispatch(createTemplate(template));
-    },
-    [dispatch]
-  );
+  const addTemplate = async (template: Partial<TaskTemplate>) => {
+    return dispatch(createTemplate(template));
+  };
 
-  const selectTask = useCallback(
-    (task: Task | null) => {
-      dispatch(setSelectedTask(task));
-    },
-    [dispatch]
-  );
+  const selectTask = (task: Task | null) => {
+    dispatch(setSelectedTask(task));
+  };
 
-  const updateFilters = useCallback(
-    (newFilters: TaskFilter) => {
-      dispatch(setFilters(newFilters));
-    },
-    [dispatch]
-  );
-
-  const resetFilters = useCallback(() => {
-    dispatch(clearFilters());
-  }, [dispatch]);
+  const clearTaskError = () => {
+    dispatch(clearError());
+  };
 
   return {
     tasks,
-    templates,
     selectedTask,
+    templates,
     loading,
     error,
-    filters,
     loadTasks,
     addTask,
     editTask,
@@ -96,7 +67,6 @@ export const useTasks = () => {
     loadTemplates,
     addTemplate,
     selectTask,
-    updateFilters,
-    resetFilters,
+    clearTaskError
   };
 }; 

@@ -4,11 +4,11 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  role: 'admin' | 'user' | 'manager';
-  avatar?: string;
-  emailVerified: boolean;
-  createdAt?: string;
-  updatedAt?: string;
+  role: string;
+  phone?: string;
+  address?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface AuthState {
@@ -41,11 +41,10 @@ export interface ClientsState {
 
 export interface TaskState {
   tasks: Task[];
-  templates: TaskTemplate[];
   selectedTask: Task | null;
+  templates: TaskTemplate[];
   loading: boolean;
   error: string | null;
-  filters: TaskFilter;
 }
 
 export interface ThemeSettings {
@@ -62,18 +61,18 @@ export interface NotificationSettings {
 }
 
 export interface SettingsState {
-  theme: ThemeSettings;
-  notifications: NotificationSettings;
+  theme: 'light' | 'dark';
   language: string;
-  timezone: string;
-  dateFormat: string;
+  notifications: boolean;
   loading: boolean;
   error: string | null;
 }
 
 export interface RootState {
+  tasks: TaskState;
   auth: AuthState;
   clients: ClientsState;
-  tasks: TaskState;
   settings: SettingsState;
-} 
+}
+
+export type { Task, TaskTemplate, TaskFilter }; 

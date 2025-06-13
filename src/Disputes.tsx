@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Eye, Edit, Trash2, X, AlertCircle, CheckCircle2, Clock, FileWarning, PlusCircle, Filter, ChevronDown, ChevronUp, TrendingUp, BarChart2, FileText, ChevronRight, Calendar, Users, Target, ArrowUpRight } from 'lucide-react';
+import { Search, Eye, Edit, Trash2, X, AlertCircle, CheckCircle2, Clock, FileWarning, PlusCircle, Filter, ChevronDown, ChevronUp, TrendingUp, FileText, Target, ArrowUpRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 
@@ -20,9 +20,6 @@ const emptyDispute = {
 };
 
 const PAGE_SIZE = 10;
-
-// Add shimmer skeleton CSS
-const shimmer = `\n  @keyframes shimmer {\n    0% { background-position: -400px 0; }\n    100% { background-position: 400px 0; }\n  }\n`;
 
 const disputeTemplates = [
   {
@@ -72,6 +69,23 @@ const disputeTemplates = [
   }
 ];
 
+function getStatusIcon(status: string) {
+  switch (status) {
+    case 'In Progress':
+      return <Clock className="w-4 h-4 text-blue-500" />;
+    case 'Resolved':
+      return <CheckCircle2 className="w-4 h-4 text-green-500" />;
+    case 'Submitted':
+      return <Clock className="w-4 h-4 text-yellow-500" />;
+    case 'Draft':
+      return <FileWarning className="w-4 h-4 text-gray-500" />;
+    case 'Rejected':
+      return <AlertCircle className="w-4 h-4 text-red-500" />;
+    default:
+      return null;
+  }
+}
+
 export default function Disputes() {
   const [loading, setLoading] = useState(true);
   const [disputes, setDisputes] = useState<any[]>([]);
@@ -91,7 +105,6 @@ export default function Disputes() {
     dateRange: 'all'
   });
   const [showTemplates, setShowTemplates] = useState(false);
-  const [activeTab, setActiveTab] = useState('all');
 
   useEffect(() => {
     setTimeout(() => {
@@ -123,7 +136,6 @@ export default function Disputes() {
 
   // Bulk actions
   const allChecked = paginated.length > 0 && paginated.every(d => checked.includes(d.id));
-  const someChecked = paginated.some(d => checked.includes(d.id));
 
   function handleAddDispute(e: React.FormEvent) {
     e.preventDefault();
@@ -175,44 +187,6 @@ export default function Disputes() {
     setChecked([]);
     toast.success('Selected disputes deleted!');
   }
-
-  function getStatusIcon(status: string) {
-    switch (status) {
-      case 'In Progress':
-        return <Clock className="w-4 h-4 text-blue-500" />;
-      case 'Resolved':
-        return <CheckCircle2 className="w-4 h-4 text-green-500" />;
-      case 'Submitted':
-        return <Clock className="w-4 h-4 text-yellow-500" />;
-      case 'Draft':
-        return <FileWarning className="w-4 h-4 text-gray-500" />;
-      case 'Rejected':
-        return <AlertCircle className="w-4 h-4 text-red-500" />;
-      default:
-        return null;
-    }
-  }
-
-  function getPriorityColor(priority: string) {
-    switch (priority) {
-      case 'High':
-        return 'bg-red-100 text-red-700';
-      case 'Medium':
-        return 'bg-yellow-100 text-yellow-700';
-      case 'Low':
-        return 'bg-green-100 text-green-700';
-      default:
-        return 'bg-gray-100 text-gray-700';
-    }
-  }
-
-  const stats = {
-    total: filtered.length,
-    resolved: filtered.filter(d => d.status === 'Resolved').length,
-    inProgress: filtered.filter(d => d.status === 'In Progress').length,
-    successRate: Math.round((filtered.filter(d => d.status === 'Resolved').length / filtered.length) * 100) || 0,
-    totalImpact: filtered.reduce((sum, d) => sum + d.creditImpact, 0)
-  };
 
   const renderTimeline = (dispute: any) => {
     const timeline = [
@@ -266,7 +240,7 @@ export default function Disputes() {
                 <h3 className="text-2xl font-bold mt-1">{disputes.filter(d => d.status === 'In Progress').length}</h3>
               </div>
               <div className="p-3 bg-blue-50 rounded-lg">
-                <FileText className="text-blue-600" size={24} />
+                <FileText size={24} />
               </div>
             </div>
             <div className="flex items-center gap-2 mt-4">
@@ -285,7 +259,7 @@ export default function Disputes() {
                 <h3 className="text-2xl font-bold mt-1">78%</h3>
               </div>
               <div className="p-3 bg-green-50 rounded-lg">
-                <TrendingUp className="text-green-600" size={24} />
+                <TrendingUp size={24} />
               </div>
             </div>
             <div className="flex items-center gap-2 mt-4">
@@ -304,7 +278,7 @@ export default function Disputes() {
                 <h3 className="text-2xl font-bold mt-1">32 days</h3>
               </div>
               <div className="p-3 bg-purple-50 rounded-lg">
-                <Clock className="text-purple-600" size={24} />
+                <Clock size={24} />
               </div>
             </div>
             <div className="flex items-center gap-2 mt-4">
@@ -323,7 +297,7 @@ export default function Disputes() {
                 <h3 className="text-2xl font-bold mt-1">+45 pts</h3>
               </div>
               <div className="p-3 bg-orange-50 rounded-lg">
-                <Target className="text-orange-600" size={24} />
+                <Target size={24} />
               </div>
             </div>
             <div className="flex items-center gap-2 mt-4">

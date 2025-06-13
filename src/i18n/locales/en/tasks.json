@@ -1,0 +1,47 @@
+{
+  "title": "Tasks",
+  "addTask": "Add Task",
+  "editTask": "Edit Task",
+  "search": "Search tasks...",
+  "filters": {
+    "all": "All",
+    "todo": "To Do",
+    "in_progress": "In Progress",
+    "review": "Review",
+    "completed": "Completed",
+    "blocked": "Blocked"
+  },
+  "table": {
+    "title": "Title",
+    "status": "Status",
+    "priority": "Priority",
+    "dueDate": "Due Date",
+    "assignee": "Assignee",
+    "actions": "Actions"
+  },
+  "priority": {
+    "low": "Low",
+    "medium": "Medium",
+    "high": "High",
+    "urgent": "Urgent"
+  },
+  "status": {
+    "todo": "To Do",
+    "in_progress": "In Progress",
+    "review": "Review",
+    "completed": "Completed",
+    "blocked": "Blocked"
+  },
+  "form": {
+    "title": "Title",
+    "description": "Description",
+    "status": "Status",
+    "priority": "Priority",
+    "dueDate": "Due Date",
+    "assignee": "Assignee",
+    "category": "Category",
+    "notes": "Notes",
+    "submit": "Save",
+    "cancel": "Cancel"
+  }
+} 

@@ -1,20 +1,20 @@
 import { lazy } from 'react';
 import { ROUTES } from './constants';
 
-// Lazy load components
-const Home = lazy(() => import('@/pages/Home'));
-const Login = lazy(() => import('@/pages/auth/Login'));
-const Register = lazy(() => import('@/pages/auth/Register'));
-const ForgotPassword = lazy(() => import('@/pages/auth/ForgotPassword'));
-const ResetPassword = lazy(() => import('@/pages/auth/ResetPassword'));
-const Dashboard = lazy(() => import('@/pages/Dashboard'));
-const Clients = lazy(() => import('@/pages/clients/Clients'));
-const ClientDetails = lazy(() => import('@/pages/clients/ClientDetails'));
-const Tasks = lazy(() => import('@/pages/tasks/Tasks'));
-const TaskDetails = lazy(() => import('@/pages/tasks/TaskDetails'));
-const Settings = lazy(() => import('@/pages/Settings'));
-const Profile = lazy(() => import('@/pages/Profile'));
-const NotFound = lazy(() => import('@/pages/NotFound'));
+// Lazy load components with correct paths
+const Home = lazy(() => import('../Home'));
+const Login = lazy(() => import('../pages/auth/Login'));
+const Register = lazy(() => import('../pages/auth/Register'));
+const ForgotPassword = lazy(() => import('../pages/auth/ForgotPassword'));
+const ResetPassword = lazy(() => import('../pages/auth/ResetPassword'));
+const Dashboard = lazy(() => import('../pages/dashboard/Dashboard'));
+const Clients = lazy(() => import('../Clients'));
+// const ClientDetails = lazy(() => import('@/pages/clients/ClientDetails')); // Not found, comment out
+const Tasks = lazy(() => import('../Tasks'));
+// const TaskDetails = lazy(() => import('@/pages/tasks/TaskDetails')); // Not found, comment out
+const Settings = lazy(() => import('../pages/settings/Settings'));
+const Profile = lazy(() => import('../pages/profile/Profile'));
+const NotFound = lazy(() => import('../pages/NotFound'));
 
 // Route configuration
 export const routes = [
@@ -53,21 +53,21 @@ export const routes = [
     element: Clients,
     public: false,
   },
-  {
-    path: `${ROUTES.CLIENTS}/:id`,
-    element: ClientDetails,
-    public: false,
-  },
+  // {
+  //   path: `${ROUTES.CLIENTS}/:id`,
+  //   element: ClientDetails,
+  //   public: false,
+  // },
   {
     path: ROUTES.TASKS,
     element: Tasks,
     public: false,
   },
-  {
-    path: `${ROUTES.TASKS}/:id`,
-    element: TaskDetails,
-    public: false,
-  },
+  // {
+  //   path: `${ROUTES.TASKS}/:id`,
+  //   element: TaskDetails,
+  //   public: false,
+  // },
   {
     path: ROUTES.SETTINGS,
     element: Settings,

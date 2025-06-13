@@ -4,7 +4,7 @@ import RecentClients from './RecentClients';
 import Analytics from './Analytics';
 import ClientGrowth from './ClientGrowth';
 import { motion } from 'framer-motion';
-import { PhoneCall, MessageCircle, Calendar, Plus, Zap, Upload, DollarSign, Mail, User, TrendingUp, Users } from 'lucide-react';
+import { PhoneCall, MessageCircle, Calendar, DollarSign, Mail, User, TrendingUp, Users, Zap } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import QuickActions from './components/QuickActions';
 import { db } from './firebase';

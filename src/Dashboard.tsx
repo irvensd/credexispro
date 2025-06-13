@@ -7,13 +7,8 @@ import {
   FileText, 
   AlertTriangle, 
   CheckCircle, 
-  Clock,
-  Target,
   ArrowUpRight,
   ArrowDownRight,
-  Eye,
-  Plus,
-  Bell,
   Download,
   UserPlus,
   FilePlus

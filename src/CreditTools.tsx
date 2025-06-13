@@ -1,4 +1,3 @@
-import { Lock, Star } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function CreditTools() {

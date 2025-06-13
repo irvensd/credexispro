@@ -11,7 +11,7 @@ interface ClientDetailPageProps {
   client: Client;
   onBack: () => void;
   onEdit: (client: Client) => void;
-  onDelete: (clientId: number) => void;
+  onDelete: (clientId: string) => void;
 }
 
 export default function ClientDetailPage({ client, onBack, onEdit, onDelete }: ClientDetailPageProps) {
@@ -37,10 +37,10 @@ export default function ClientDetailPage({ client, onBack, onEdit, onDelete }: C
   };
 
   const calculateCreditImprovement = () => {
-    return client.goalScore - client.creditScore;
+    return (client.goalScore ?? 0) - (client.creditScore ?? 0);
   };
 
-  const getCreditScoreStatus = (score: number) => {
+  const getCreditScoreStatus = (score: number = 0) => {
     if (score >= 750) return { label: 'Excellent', color: 'text-green-600' };
     if (score >= 700) return { label: 'Good', color: 'text-blue-600' };
     if (score >= 650) return { label: 'Fair', color: 'text-yellow-600' };
@@ -77,24 +77,24 @@ export default function ClientDetailPage({ client, onBack, onEdit, onDelete }: C
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Credit Score Journey</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-blue-600">{client.creditScore}</div>
+                  <div className="text-3xl font-bold text-blue-600">{client.creditScore ?? 0}</div>
                   <div className="text-sm text-gray-600">Current Score</div>
-                  <div className={`text-sm font-medium ${getCreditScoreStatus(client.creditScore).color}`}>
-                    {getCreditScoreStatus(client.creditScore).label}
+                  <div className={`text-sm font-medium ${getCreditScoreStatus(client.creditScore ?? 0).color}`}>
+                    {getCreditScoreStatus(client.creditScore ?? 0).label}
                   </div>
                 </div>
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-green-600">{client.goalScore}</div>
+                  <div className="text-3xl font-bold text-green-600">{client.goalScore ?? 0}</div>
                   <div className="text-sm text-gray-600">Goal Score</div>
-                  <div className={`text-sm font-medium ${getCreditScoreStatus(client.goalScore).color}`}>
-                    {getCreditScoreStatus(client.goalScore).label}
+                  <div className={`text-sm font-medium ${getCreditScoreStatus(client.goalScore ?? 0).color}`}>
+                    {getCreditScoreStatus(client.goalScore ?? 0).label}
                   </div>
                 </div>
                 <div className="text-center">
                   <div className="text-3xl font-bold text-indigo-600">+{calculateCreditImprovement()}</div>
                   <div className="text-sm text-gray-600">Points to Gain</div>
                   <div className="text-sm font-medium text-indigo-600">
-                    {Math.round((client.progress / 100) * calculateCreditImprovement())} gained
+                    {Math.round(((client.progress ?? 0) / 100) * calculateCreditImprovement())} gained
                   </div>
                 </div>
               </div>
@@ -103,12 +103,12 @@ export default function ClientDetailPage({ client, onBack, onEdit, onDelete }: C
               <div className="mt-6">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-gray-700">Progress</span>
-                  <span className="text-sm text-gray-500">{client.progress}% Complete</span>
+                  <span className="text-sm text-gray-500">{client.progress ?? 0}% Complete</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-3">
                   <div
                     className="bg-gradient-to-r from-blue-500 to-indigo-600 h-3 rounded-full transition-all duration-300"
-                    style={{ width: `${client.progress}%` }}
+                    style={{ width: `${client.progress ?? 0}%` }}
                   />
                 </div>
               </div>
@@ -178,7 +178,7 @@ export default function ClientDetailPage({ client, onBack, onEdit, onDelete }: C
                 </div>
                 <div>
                   <div className="text-sm text-gray-500 mb-1">Total Paid</div>
-                  <div className="text-lg font-semibold text-green-600">${client.totalPaid.toLocaleString()}</div>
+                  <div className="text-lg font-semibold text-green-600">${(client.totalPaid ?? 0).toLocaleString()}</div>
                 </div>
               </div>
             </div>
@@ -277,7 +277,7 @@ export default function ClientDetailPage({ client, onBack, onEdit, onDelete }: C
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-green-50 border border-green-200 rounded-xl p-6">
                 <h4 className="font-semibold text-green-800 mb-2">Total Revenue</h4>
-                <div className="text-3xl font-bold text-green-600">${client.totalPaid.toLocaleString()}</div>
+                <div className="text-3xl font-bold text-green-600">${(client.totalPaid ?? 0).toLocaleString()}</div>
                 <div className="text-sm text-green-700">From this client</div>
               </div>
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
@@ -439,7 +439,7 @@ export default function ClientDetailPage({ client, onBack, onEdit, onDelete }: C
                 </button>
                 <button
                   onClick={() => {
-                    onDelete(client.id);
+                    onDelete(client.id.toString());
                     setShowDeleteModal(false);
                   }}
                   className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"

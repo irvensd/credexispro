@@ -1,5 +1,5 @@
 import React from 'react';
-import type { Task } from '../types/Task';
+import type { Task } from '../types/task';
 
 interface TaskModalProps {
   isOpen: boolean;
@@ -13,9 +13,9 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSubmit, task }
     title: '',
     description: '',
     dueDate: '',
-    priority: 'Medium',
-    status: 'Pending',
-    category: 'Other',
+    priority: 'medium',
+    status: 'todo',
+    category: 'other',
     ...task,
   });
 
@@ -59,7 +59,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSubmit, task }
                 <label className="block text-sm font-medium text-gray-700">Due Date</label>
                 <input
                   type="datetime-local"
-                  value={formData.dueDate}
+                  value={formData.dueDate || ''}
                   onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                   required
@@ -73,10 +73,10 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSubmit, task }
                   onChange={(e) => setFormData({ ...formData, priority: e.target.value as Task['priority'] })}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 >
-                  <option value="Low">Low</option>
-                  <option value="Medium">Medium</option>
-                  <option value="High">High</option>
-                  <option value="Urgent">Urgent</option>
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                  <option value="urgent">Urgent</option>
                 </select>
               </div>
             </div>
@@ -89,10 +89,11 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSubmit, task }
                   onChange={(e) => setFormData({ ...formData, status: e.target.value as Task['status'] })}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 >
-                  <option value="Pending">Pending</option>
-                  <option value="In Progress">In Progress</option>
-                  <option value="Completed">Completed</option>
-                  <option value="Cancelled">Cancelled</option>
+                  <option value="todo">To Do</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="review">Review</option>
+                  <option value="completed">Completed</option>
+                  <option value="blocked">Blocked</option>
                 </select>
               </div>
 
@@ -100,14 +101,14 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSubmit, task }
                 <label className="block text-sm font-medium text-gray-700">Category</label>
                 <select
                   value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value as Task['category'] })}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 >
-                  <option value="Appointment">Appointment</option>
-                  <option value="Follow-up">Follow-up</option>
-                  <option value="Payment">Payment</option>
-                  <option value="Document">Document</option>
-                  <option value="Other">Other</option>
+                  <option value="appointment">Appointment</option>
+                  <option value="follow-up">Follow-up</option>
+                  <option value="payment">Payment</option>
+                  <option value="document">Document</option>
+                  <option value="other">Other</option>
                 </select>
               </div>
             </div>

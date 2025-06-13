@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Search, Eye, Edit, Trash2, X, FileText, Download, Upload, File, FileType, FileImage, FileArchive, FolderPlus, Plus, FilePlus } from 'lucide-react';
+import { Search, Eye, Edit, Trash2, X, FileText, File, FileType, FileImage, FileArchive, Plus, FilePlus, Upload } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import React from 'react';
@@ -7,22 +7,7 @@ import { notificationService } from './services/notificationService';
 import { db } from './firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 
-const emptyDocument = { 
-  id: '',
-  name: '',
-  type: 'PDF',
-  category: '',
-  client: '',
-  uploaded: 'just now',
-  size: '0 MB',
-  status: 'Pending',
-  notes: ''
-};
-
 const PAGE_SIZE = 10;
-
-// Add shimmer skeleton CSS
-const shimmer = `\n  @keyframes shimmer {\n    0% { background-position: -400px 0; }\n    100% { background-position: 400px 0; }\n  }\n`;
 
 type Document = {
   id: string;
@@ -60,8 +45,6 @@ export default function Documents() {
   const [editIndex, setEditIndex] = useState<number | null>(null);
   const [checked, setChecked] = useState<string[]>([]);
   const [page, setPage] = useState(1);
-  const [filter, setFilter] = useState<'all' | 'processed' | 'pending'>('all');
-  const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [docClient, setDocClient] = useState('');
   const [docCategory, setDocCategory] = useState('');
@@ -83,26 +66,16 @@ export default function Documents() {
       doc.client.toLowerCase().includes(search.toLowerCase()) ||
       doc.category.toLowerCase().includes(search.toLowerCase());
     
-    const matchesFilter = 
-      filter === 'all' ||
-      (filter === 'processed' && doc.status === 'Processed') ||
-      (filter === 'pending' && doc.status === 'Pending');
-
-    return matchesSearch && matchesFilter;
+    return matchesSearch;
   });
 
   // Pagination
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  // Bulk actions
-  const allChecked = paginated.length > 0 && paginated.every(d => checked.includes(d.id));
-  const someChecked = paginated.some(d => checked.includes(d.id));
-
   // Drag-and-drop upload handler
   const handleFileUpload = async (files: FileList | null) => {
     if (!files) return;
-    setUploading(true);
     const newDocs: Document[] = Array.from(files).map((file: File) => {
       const fileSize = `${(file.size / (1024 * 1024)).toFixed(1)} MB`;
       const doc = {
@@ -125,7 +98,6 @@ export default function Documents() {
       return doc;
     });
     setDocuments((prev: Document[]) => [...newDocs, ...prev]);
-    setUploading(false);
     setDocClient('');
     setDocCategory('');
   };
@@ -195,15 +167,6 @@ export default function Documents() {
 
   function handleCheckAll(checkedVal: boolean) {
     setChecked(checkedVal ? paginated.map(d => d.id) : checked.filter(e => !paginated.map(d => d.id).includes(e)));
-  }
-
-  async function handleBulkDelete() {
-    for (const id of checked) {
-      await deleteDoc(doc(db, 'documents', id));
-    }
-    setDocuments(docs => docs.filter(d => !checked.includes(d.id)));
-    setChecked([]);
-    toast.success('Selected documents deleted!');
   }
 
   function getFileTypeIcon(type: string) {
@@ -320,7 +283,7 @@ export default function Documents() {
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       <input
                         type="checkbox"
-                        checked={allChecked}
+                        checked={checked.length === paginated.length}
                         onChange={e => handleCheckAll(e.target.checked)}
                         className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                       />

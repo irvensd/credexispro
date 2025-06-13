@@ -42,6 +42,8 @@ export interface Task {
   actualHours?: number;
   attachments?: string[];
   templateId?: string;
+  category?: string;
+  notes?: string;
 }
 
 export interface TaskTemplate {

@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { Activity, Clock, X, Zap } from 'lucide-react';
-import { performanceTest } from '../../utils/performanceTest';
 
 interface PerformanceMetrics {
   fcp: number; // First Contentful Paint
