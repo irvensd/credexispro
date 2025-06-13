@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, User, Mail, Phone, MapPin, Target, DollarSign, AlertCircle, Check } from 'lucide-react';
-import type { Client } from '../types/Client';
+import type { Client } from '../types/store';
 import { activityService } from '../services/activityService';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'react-hot-toast';
@@ -13,7 +13,28 @@ interface AddEditClientModalProps {
   client?: Client | null;
 }
 
-const initialClient: Omit<Client, 'id'> = {
+interface FormData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  address: string;
+  status: 'Active' | 'Inactive' | 'Completed';
+  creditScore: number;
+  goalScore: number;
+  joinDate: string;
+  disputes: number;
+  progress: number;
+  nextAction: string;
+  totalPaid: number;
+  dateOfBirth: string;
+  ssn: string;
+  notes: string;
+  monthlyFee: number;
+  servicePlan: 'Basic' | 'Pro' | 'Enterprise';
+}
+
+const initialFormData: FormData = {
   firstName: '',
   lastName: '',
   email: '',
@@ -30,11 +51,36 @@ const initialClient: Omit<Client, 'id'> = {
   dateOfBirth: '',
   ssn: '',
   notes: '',
+  monthlyFee: 0,
+  servicePlan: 'Basic',
 };
+
+function mapClientToFormData(client: Client): FormData {
+  return {
+    firstName: client.firstName || '',
+    lastName: client.lastName || '',
+    email: client.email || '',
+    phone: client.phone || '',
+    address: client.address || '',
+    status: client.status || 'Active',
+    creditScore: client.creditScore ?? 500,
+    goalScore: client.goalScore ?? 750,
+    joinDate: client.joinDate || new Date().toISOString().split('T')[0],
+    disputes: client.disputes ?? 0,
+    progress: client.progress ?? 0,
+    nextAction: client.nextAction || '',
+    totalPaid: client.totalPaid ?? 0,
+    dateOfBirth: client.dateOfBirth || '',
+    ssn: client.ssn || '',
+    notes: client.notes || '',
+    monthlyFee: client.monthlyFee ?? 0,
+    servicePlan: client.servicePlan || 'Basic',
+  };
+}
 
 export default function AddEditClientModal({ isOpen, onClose, onSave, client }: AddEditClientModalProps) {
   const { user } = useAuth();
-  const [formData, setFormData] = useState<Omit<Client, 'id'> & { id?: string }>(initialClient);
+  const [formData, setFormData] = useState<FormData>(client ? mapClientToFormData(client) : initialFormData);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -43,15 +89,15 @@ export default function AddEditClientModal({ isOpen, onClose, onSave, client }: 
 
   useEffect(() => {
     if (client) {
-      setFormData(client);
+      setFormData(mapClientToFormData(client));
     } else {
-      setFormData(initialClient);
+      setFormData(initialFormData);
     }
     setErrors({});
     setCurrentStep(1);
   }, [client, isOpen]);
 
-  const validateStep = (step: number): boolean => {
+  const validateStep = (step: number) => {
     const newErrors: Record<string, string> = {};
 
     if (step === 1) {
@@ -65,32 +111,33 @@ export default function AddEditClientModal({ isOpen, onClose, onSave, client }: 
       if (!formData.email.trim()) {
         newErrors.email = 'Email is required';
       } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-        newErrors.email = 'Email is invalid';
+        newErrors.email = 'Invalid email format';
       }
       if (!formData.phone.trim()) {
         newErrors.phone = 'Phone number is required';
       }
-      if (!formData.address.trim()) {
-        newErrors.address = 'Address is required';
+      if (formData.address && !formData.address.trim()) {
+        newErrors.address = 'Address cannot be empty if provided';
       }
-    }
-
-    if (step === 2) {
+    } else if (step === 2) {
       // Credit Information
-      if (formData.creditScore < 300 || formData.creditScore > 850) {
-        newErrors.creditScore = 'Credit score must be between 300 and 850';
+      if (formData.creditScore !== undefined) {
+        if (formData.creditScore < 300 || formData.creditScore > 850) {
+          newErrors.creditScore = 'Credit score must be between 300 and 850';
+        }
       }
-      if (formData.goalScore < 300 || formData.goalScore > 850) {
-        newErrors.goalScore = 'Goal score must be between 300 and 850';
+      if (formData.goalScore !== undefined) {
+        if (formData.goalScore < 300 || formData.goalScore > 850) {
+          newErrors.goalScore = 'Goal score must be between 300 and 850';
+        }
+        if (
+          formData.goalScore !== undefined &&
+          formData.creditScore !== undefined &&
+          formData.goalScore <= formData.creditScore
+        ) {
+          newErrors.goalScore = 'Goal score must be higher than current credit score';
+        }
       }
-      if (formData.goalScore <= formData.creditScore) {
-        newErrors.goalScore = 'Goal score must be higher than current credit score';
-      }
-    }
-
-    if (step === 3) {
-      // Service Information
-      // (no servicePlan or monthlyFee validation)
     }
 
     setErrors(newErrors);
@@ -127,7 +174,7 @@ export default function AddEditClientModal({ isOpen, onClose, onSave, client }: 
         await activityService.logClientAdded(`${clientData.firstName} ${clientData.lastName}`, user?.id || '');
       }
       setIsSubmitting(false);
-      setFormData(initialClient);
+      setFormData(initialFormData);
       onClose();
     } catch (error) {
       console.error('Error submitting client:', error);
@@ -136,8 +183,11 @@ export default function AddEditClientModal({ isOpen, onClose, onSave, client }: 
     }
   };
 
-  const handleChange = (field: keyof Client, value: string | number) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const handleChange = (field: keyof FormData, value: string | number | undefined) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
@@ -286,7 +336,7 @@ export default function AddEditClientModal({ isOpen, onClose, onSave, client }: 
               </label>
               <select
                 value={formData.status}
-                onChange={(e) => handleChange('status', e.target.value)}
+                onChange={(e) => handleChange('status', e.target.value as 'Active' | 'Inactive' | 'Completed')}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               >
                 <option value="Active">Active</option>
@@ -306,48 +356,33 @@ export default function AddEditClientModal({ isOpen, onClose, onSave, client }: 
               <p className="text-gray-500">Current credit status and goals</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Current Credit Score *
-                </label>
+                <label className="block text-sm font-medium text-gray-700">Credit Score</label>
                 <input
                   type="number"
                   min="300"
                   max="850"
-                  value={formData.creditScore}
-                  onChange={(e) => handleChange('creditScore', parseInt(e.target.value) || 300)}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${
-                    errors.creditScore ? 'border-red-300' : 'border-gray-300'
-                  }`}
+                  value={formData.creditScore === undefined ? '' : formData.creditScore}
+                  onChange={(e) => handleChange('creditScore', e.target.value ? parseInt(e.target.value) : undefined)}
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 />
                 {errors.creditScore && (
-                  <p className="mt-1 text-sm text-red-600 flex items-center">
-                    <AlertCircle className="w-4 h-4 mr-1" />
-                    {errors.creditScore}
-                  </p>
+                  <p className="mt-1 text-sm text-red-600">{errors.creditScore}</p>
                 )}
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Goal Credit Score *
-                </label>
+                <label className="block text-sm font-medium text-gray-700">Goal Score</label>
                 <input
                   type="number"
                   min="300"
                   max="850"
-                  value={formData.goalScore}
-                  onChange={(e) => handleChange('goalScore', parseInt(e.target.value) || 750)}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${
-                    errors.goalScore ? 'border-red-300' : 'border-gray-300'
-                  }`}
+                  value={formData.goalScore === undefined ? '' : formData.goalScore}
+                  onChange={(e) => handleChange('goalScore', e.target.value ? parseInt(e.target.value) : undefined)}
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 />
                 {errors.goalScore && (
-                  <p className="mt-1 text-sm text-red-600 flex items-center">
-                    <AlertCircle className="w-4 h-4 mr-1" />
-                    {errors.goalScore}
-                  </p>
+                  <p className="mt-1 text-sm text-red-600">{errors.goalScore}</p>
                 )}
               </div>
             </div>

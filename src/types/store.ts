@@ -9,6 +9,7 @@ export interface User {
   address?: string;
   createdAt: string;
   updatedAt: string;
+  emailVerified?: boolean;
 }
 
 export interface AuthState {
@@ -24,12 +25,26 @@ export interface AuthState {
 
 export interface Client {
   id: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   phone: string;
-  status: 'active' | 'inactive' | 'pending';
-  createdAt: string;
-  updatedAt: string;
+  address?: string;
+  status: 'Active' | 'Inactive' | 'Completed';
+  creditScore?: number;
+  goalScore?: number;
+  joinDate: string;
+  disputes?: number;
+  progress?: number;
+  nextAction?: string;
+  totalPaid?: number;
+  dateOfBirth?: string;
+  ssn?: string;
+  notes?: string;
+  monthlyFee?: number;
+  servicePlan?: 'Basic' | 'Pro' | 'Enterprise';
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface ClientsState {
@@ -45,6 +60,11 @@ export interface TaskState {
   templates: TaskTemplate[];
   loading: boolean;
   error: string | null;
+  filters: {
+    status: string[];
+    priority: string[];
+    assignedTo: string[];
+  };
 }
 
 export interface ThemeSettings {

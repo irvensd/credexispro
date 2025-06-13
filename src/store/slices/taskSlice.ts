@@ -10,7 +10,12 @@ const initialState: TaskState = {
   selectedTask: null,
   templates: [],
   loading: false,
-  error: null
+  error: null,
+  filters: {
+    status: [],
+    priority: [],
+    assignedTo: [],
+  }
 };
 
 export const fetchTasks = createAsyncThunk<Task[], TaskFilter>(
@@ -73,6 +78,12 @@ const taskSlice = createSlice({
     },
     clearError: (state) => {
       state.error = null;
+    },
+    setFilters: (state, action: PayloadAction<Partial<TaskState['filters']>>) => {
+      state.filters = { ...state.filters, ...action.payload };
+    },
+    clearFilters: (state) => {
+      state.filters = initialState.filters;
     }
   },
   extraReducers: (builder) => {
@@ -116,5 +127,5 @@ const taskSlice = createSlice({
   }
 });
 
-export const { setSelectedTask, clearError } = taskSlice.actions;
+export const { setSelectedTask, clearError, setFilters, clearFilters } = taskSlice.actions;
 export default taskSlice.reducer; 

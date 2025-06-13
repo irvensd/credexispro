@@ -35,7 +35,11 @@ const authSlice = createSlice({
     loginSuccess: (state, action: PayloadAction<{ user: User; token: string; refreshToken: string }>) => {
       state.loading = false;
       state.isAuthenticated = true;
-      state.user = action.payload.user;
+      state.user = {
+        ...action.payload.user,
+        createdAt: action.payload.user.createdAt || new Date().toISOString(),
+        updatedAt: action.payload.user.updatedAt || new Date().toISOString()
+      };
       state.token = action.payload.token;
       state.refreshToken = action.payload.refreshToken;
       state.error = null;

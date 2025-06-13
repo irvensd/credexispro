@@ -9,7 +9,7 @@ import {
   createTemplate,
   setSelectedTask,
   clearError
-} from '../store/features/taskSlice';
+} from '../store/slices/taskSlice';
 import type { Task, TaskTemplate, TaskFilter } from '../types/task';
 
 export const useTasks = () => {
