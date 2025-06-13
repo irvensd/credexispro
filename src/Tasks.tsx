@@ -2,21 +2,7 @@ import { useState, useEffect } from 'react';
 import { Search, Eye, Edit, Trash2, X, CheckCircle2, Clock, AlertCircle, ClipboardPlus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { Calendar as BigCalendar, dateFnsLocalizer } from 'react-big-calendar';
-import { format, parse, startOfWeek, getDay } from 'date-fns';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
-import { enUS } from 'date-fns/locale/en-US';
-
-const locales = {
-  'en-US': enUS,
-};
-const localizer = dateFnsLocalizer({
-  format,
-  parse,
-  startOfWeek,
-  getDay,
-  locales,
-});
 
 const mockTasks = [
   { 
@@ -120,15 +106,6 @@ export default function Tasks() {
 
   // Bulk actions
   const allChecked = paginated.length > 0 && paginated.every(t => checked.includes(t.id));
-
-  // Calendar events
-  const calendarEvents = filtered.map(task => ({
-    id: task.id,
-    title: task.title,
-    start: new Date(task.dueDate),
-    end: new Date(task.dueDate),
-    resource: task,
-  }));
 
   function handleAddTask(e: React.FormEvent) {
     e.preventDefault();

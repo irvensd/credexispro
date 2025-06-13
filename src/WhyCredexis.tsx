@@ -45,11 +45,13 @@ export default function WhyCredexis() {
       </motion.div>
       <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          {features.map((f, i) => (
-            <div key={f.title} className="bg-white rounded-2xl shadow-lg p-6 flex flex-col items-center text-center hover:shadow-xl transition-shadow">
-              <div className="mb-4">{f.icon}</div>
-              <div className="font-semibold text-lg text-gray-900 mb-2">{f.title}</div>
-              <div className="text-gray-500 text-sm">{f.desc}</div>
+          {features.map((f) => (
+            <div className="flex flex-col items-center text-center">
+              <div className="mb-2">
+                {f.icon}
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900">{f.title}</h3>
+              <p className="text-gray-500">{f.desc}</p>
             </div>
           ))}
         </div>

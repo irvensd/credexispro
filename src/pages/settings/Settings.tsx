@@ -98,7 +98,7 @@ const Settings: React.FC = () => {
         <div className="p-6">
           <div className="flex items-center space-x-3 mb-6">
             <div className="rounded-full bg-purple-100 p-2">
-              <Moon className="h-6 w-6 text-purple-600" />
+              {/* Moon icon removed as per instructions */}
             </div>
             <div>
               <h2 className="text-lg font-medium text-gray-900">Appearance</h2>

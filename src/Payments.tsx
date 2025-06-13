@@ -25,7 +25,6 @@ export default function Payments() {
   const [form, setForm] = useState({ ...emptyPayment });
   const [formError, setFormError] = useState('');
   const [editIndex, setEditIndex] = useState<number | null>(null);
-  const [checked, setChecked] = useState<string[]>([]);
   const [page, setPage] = useState(1);
   const [filter, setFilter] = useState<'all' | 'completed' | 'pending' | 'failed'>('all');
 

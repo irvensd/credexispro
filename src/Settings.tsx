@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { User, Bell, Lock, CreditCard, Globe, Shield, HelpCircle, LogOut, Check, X, UserCircle, Sun, Moon, Globe2, Languages, Accessibility, Download, Trash2, Mail, MessageSquare, Smartphone, ShieldCheck } from 'lucide-react';
+import { User, Bell, Lock, CreditCard, Globe, Shield, HelpCircle, LogOut, Check, X, UserCircle, Sun, Globe2, Accessibility, Download, Trash2, Mail, MessageSquare, Smartphone, ShieldCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -182,7 +182,7 @@ export default function Settings({ userData }: { userData?: any }) {
 
   const [activeSection, setActiveSection] = useState('profile');
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
-  const [currentPlan, setCurrentPlan] = useState('pro');
+  const [currentPlan] = useState('pro');
   const navigate = useNavigate();
   const roles = ['admin', 'manager', 'user'];
   const [selectedUserId, setSelectedUserId] = useState(userData.id || '');

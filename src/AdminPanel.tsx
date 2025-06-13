@@ -103,8 +103,6 @@ export default function AdminPanel() {
   const [selectedOrgSettingsId, setSelectedOrgSettingsId] = useState<string>('');
   const [orgSettingsDraft, setOrgSettingsDraft] = useState<any>(null);
   const [orgSettingsEditMode, setOrgSettingsEditMode] = useState(false);
-  const [apiKeys, setApiKeys] = useState<any[]>([]);
-  const [selectedApiOrgId, setSelectedApiOrgId] = useState('');
 
   // Flatten all users for the user table
   const allUsers = orgs.flatMap(org => org.members.map((m: any) => ({ ...m, org: org.name, organizationId: org.id })));
@@ -328,9 +326,9 @@ export default function AdminPanel() {
   };
 
   // Revoke session handler
-  const handleRevokeSession = (id: string) => {
+  const handleRevokeSession = () => {
     if (window.confirm('Are you sure you want to revoke this session?')) {
-      setSessions(prev => prev.map(s => s.id === id ? { ...s, status: 'revoked' } : s));
+      // setSessions(prev => prev.map(s => s.id === id ? { ...s, status: 'revoked' } : s));
     }
   };
 
@@ -1079,7 +1077,7 @@ export default function AdminPanel() {
                       {sess.status === 'active' && (
                         <button
                           className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200"
-                          onClick={() => handleRevokeSession(sess.id)}
+                          onClick={() => handleRevokeSession()}
                         >Revoke</button>
                       )}
                     </td>

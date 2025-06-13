@@ -1,15 +1,6 @@
 import { useState } from 'react';
 import React from 'react';
 
-const growthData6 = [
-  { month: 'Jan', value: 2 },
-  { month: 'Feb', value: 3 },
-  { month: 'Mar', value: 4 },
-  { month: 'Apr', value: 6 },
-  { month: 'May', value: 8 },
-  { month: 'Jun', value: 10 },
-];
-
 export default function ClientGrowth() {
   const [range, setRange] = useState<'6m' | '1y'>('6m');
   const [loading, setLoading] = useState(true);

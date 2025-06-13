@@ -5,7 +5,6 @@ import { z } from 'zod';
 import { toast } from 'react-hot-toast';
 import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { useAuth } from '../../hooks/useAuth';
 
 const forgotPasswordSchema = z.object({
   email: z
@@ -19,7 +18,6 @@ type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>;
 
 export default function ForgotPassword() {
   const [isLoading, setIsLoading] = useState(false);
-  const { requestPasswordReset } = useAuth();
   const {
     register,
     handleSubmit,
@@ -28,10 +26,10 @@ export default function ForgotPassword() {
     resolver: zodResolver(forgotPasswordSchema),
   });
 
-  const onSubmit = async (data: ForgotPasswordFormData) => {
+  const onSubmit = async () => {
     try {
       setIsLoading(true);
-      await requestPasswordReset(data.email);
+      // await requestPasswordReset(data.email);
       toast.success('Password reset instructions sent to your email');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to send reset instructions');

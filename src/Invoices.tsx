@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import type { Invoice } from './types/Invoice';
 import type { Client } from './types/Client';
-import { Search } from 'lucide-react';
 
 export default function Invoices() {
   const [clients] = useState<Client[]>([]);

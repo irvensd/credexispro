@@ -76,7 +76,7 @@ export const securityMiddleware = [
   cors(corsOptions),
 
   // Additional security headers
-  (req: Request, res: Response, next: NextFunction) => {
+  (res: Response, next: NextFunction) => {
     Object.entries(securityHeaders).forEach(([key, value]) => {
       res.setHeader(key, value);
     });

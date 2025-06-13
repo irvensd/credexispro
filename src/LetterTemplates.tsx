@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { PlusCircle, Edit, Eye, Trash2, FileText, ChevronRight, History, Download, X } from 'lucide-react';
+import { PlusCircle, Edit, Eye, Trash2, FileText, History, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function LetterTemplates() {

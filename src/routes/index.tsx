@@ -9,7 +9,6 @@ import PrivacyPolicy from '../pages/legal/PrivacyPolicy';
 import CookiePolicy from '../pages/legal/CookiePolicy';
 import TermsOfService from '../pages/legal/TermsOfService';
 import GDPRCompliance from '../pages/legal/GDPRCompliance';
-import { PerformanceTestPage } from '../pages/performance/PerformanceTestPage';
 
 export const router = createBrowserRouter([
   {
@@ -51,10 +50,6 @@ export const router = createBrowserRouter([
       {
         path: 'legal/gdpr',
         element: <GDPRCompliance />,
-      },
-      {
-        path: 'performance',
-        element: <PerformanceTestPage />,
       },
     ],
   },

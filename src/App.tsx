@@ -23,7 +23,6 @@ import CreditTools from './CreditTools';
 import Settings from './Settings';
 import Invoices from './Invoices';
 import Reports from './Reports';
-import { useLocation } from 'react-router-dom';
 import AdminPanel from './AdminPanel';
 import { AuthProvider } from './contexts/AuthContext';
 import { InviteProvider } from './contexts/InviteContext';
@@ -34,10 +33,10 @@ import GDPRCompliance from './components/legal/GDPRCompliance';
 import Footer from './components/layout/Footer';
 import CookieConsentBanner from './components/legal/CookieConsentBanner';
 import { auth, db } from './firebase';
-import { signInWithEmailAndPassword, signOut, User, onAuthStateChanged } from 'firebase/auth';
+import { onAuthStateChanged } from 'firebase/auth';
 import { Toaster } from 'react-hot-toast';
 import NotFound from './pages/NotFound';
-import { collection, getDocs, addDoc, doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { loginSuccess, logout as reduxLogout } from './store/slices/authSlice';
 
 // Loading component
@@ -49,7 +48,6 @@ const LoadingSpinner = () => (
 
 // Dashboard Layout Component
 const DashboardLayout = ({ children, userData }: { children: React.ReactNode, userData?: any }) => {
-  const location = useLocation();
   const [showQuickStart, setShowQuickStart] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   
