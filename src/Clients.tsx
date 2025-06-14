@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useTranslation } from './hooks/useTranslation';
 import { useClients } from './hooks/useClients';
 import AddEditClientModal from './components/AddEditClientModal';
 import Modal from './components/Modal';
@@ -15,8 +13,6 @@ const statusOptions = [
 ];
 
 const Clients: React.FC = () => {
-  const navigate = useNavigate();
-  const { t } = useTranslation();
   const { clients, createClient, updateClient, deleteClient } = useClients();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');

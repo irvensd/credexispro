@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, Eye, Edit, Trash2, X, AlertCircle, CheckCircle2, Clock, FileWarning, PlusCircle, Filter, ChevronDown, ChevronUp, TrendingUp, FileText, Target, ArrowUpRight } from 'lucide-react';
+import { Search, Eye, Edit, Trash2, X, AlertCircle, CheckCircle2, Clock, FileWarning, PlusCircle, Filter, ChevronDown, ChevronUp, TrendingUp, FileText, Target } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDisputes, type Dispute } from './hooks/useDisputes';
 import toast from 'react-hot-toast';
@@ -165,22 +165,6 @@ export default function Disputes() {
     setForm(disputeForm);
     setEditId(id);
     setShowAdd(true);
-  }
-
-  function handleFormChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) {
-    const { name, value } = e.target;
-    setForm(prev => {
-      if (name === 'status') {
-        return { ...prev, [name]: value as DisputeStatus };
-      }
-      if (name === 'priority') {
-        return { ...prev, [name]: value as DisputePriority };
-      }
-      if (name === 'creditImpact') {
-        return { ...prev, [name]: Number(value) };
-      }
-      return { ...prev, [name]: value };
-    });
   }
 
   function handleCheck(id: string, checkedVal: boolean) {

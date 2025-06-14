@@ -1,16 +1,52 @@
-import { useState } from 'react';
-import React from 'react';
+import { useState, useEffect } from 'react';
+import { db } from './firebase';
+import { collection, getDocs } from 'firebase/firestore';
+
+function getMonthYear(dateVal: any) {
+  let date: Date;
+  if (!dateVal) return '';
+  if (typeof dateVal === 'string') {
+    date = new Date(dateVal);
+  } else if (dateVal.seconds) {
+    // Firestore Timestamp
+    date = new Date(dateVal.seconds * 1000);
+  } else {
+    return '';
+  }
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function getLastMonths(count: number) {
+  const months = [];
+  const now = new Date();
+  for (let i = count - 1; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+  }
+  return months;
+}
 
 export default function ClientGrowth() {
   const [range, setRange] = useState<'6m' | '1y'>('6m');
   const [loading, setLoading] = useState(true);
-  const [data, setData] = useState<any[]>([]);
+  const [data, setData] = useState<{ month: string; value: number }[]>([]);
 
-  React.useEffect(() => {
-    setTimeout(() => {
-      setData([]); // Start with empty data
+  useEffect(() => {
+    setLoading(true);
+    (async () => {
+      const snap = await getDocs(collection(db, 'clients'));
+      const months = getLastMonths(range === '6m' ? 6 : 12);
+      const counts: Record<string, number> = {};
+      months.forEach(m => (counts[m] = 0));
+      snap.forEach(doc => {
+        const c = doc.data();
+        const dateVal = c.createdAt || c.joinDate;
+        const m = getMonthYear(dateVal);
+        if (m && counts[m] !== undefined) counts[m]++;
+      });
+      setData(months.map(m => ({ month: m, value: counts[m] })));
       setLoading(false);
-    }, 1200);
+    })();
   }, [range]);
 
   return (

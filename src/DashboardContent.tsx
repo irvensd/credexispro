@@ -343,7 +343,9 @@ const ClientLeaderboard = () => {
 };
 
 export default function DashboardContent() {
-  const [showOnboarding, setShowOnboarding] = useState(true);
+  const [showOnboarding, setShowOnboarding] = useState(() => {
+    return !localStorage.getItem('dashboardOnboardingDismissed');
+  });
   return (
     <div className="space-y-12">
       {showOnboarding && (
@@ -354,7 +356,10 @@ export default function DashboardContent() {
           </div>
           <button
             className="ml-4 px-3 py-1 rounded bg-indigo-100 text-indigo-700 font-semibold hover:bg-indigo-200 transition"
-            onClick={() => setShowOnboarding(false)}
+            onClick={() => {
+              setShowOnboarding(false);
+              localStorage.setItem('dashboardOnboardingDismissed', 'true');
+            }}
           >
             Dismiss
           </button>
