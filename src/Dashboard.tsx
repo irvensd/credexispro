@@ -13,8 +13,14 @@ import {
   FilePlus
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useClients } from './hooks/useClients';
+import { useTasks } from './hooks/useTasks';
 
 export default function Dashboard() {
+  const { clients } = useClients();
+  const { tasks } = useTasks();
+  console.log('Dashboard tasks:', tasks);
+
   const StatCard = ({ title, value, change, icon: Icon, trend, prefix = '', suffix = '' }: {
     title: string;
     value: number | string;
@@ -77,10 +83,12 @@ export default function Dashboard() {
       </div>
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Total Clients" value={0} change={0} icon={Users} trend="up" />
-        <StatCard title="Active Clients" value={0} icon={Users} />
+        <StatCard title="Total Clients" value={clients.length} change={0} icon={Users} trend="up" />
+        <StatCard title="Active Clients" value={clients.filter(c => c.status === 'Active').length} icon={Users} />
         <StatCard title="Monthly Revenue" value={0} prefix="$" change={0} icon={DollarSign} trend="up" />
         <StatCard title="Avg. Credit Increase" value={0} suffix=" pts" icon={TrendingUp} />
+        <StatCard title="High Priority Tasks" value={tasks.filter(t => (t.priority?.toLowerCase() === 'high' || t.priority?.toLowerCase() === 'urgent')).length} icon={AlertTriangle} />
+        <StatCard title="Pending Tasks" value={tasks.filter(t => t.status === 'todo' || t.status === 'in_progress').length} icon={FileText} />
       </div>
       {/* Secondary Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

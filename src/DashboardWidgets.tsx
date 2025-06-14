@@ -24,13 +24,14 @@ export default function DashboardWidgets() {
       // Active Clients
       const activeClientsSnap = await getDocs(query(collection(db, 'clients'), where('status', '==', 'Active')));
       // Active Disputes
-      const activeDisputesSnap = await getDocs(query(collection(db, 'disputes'), where('status', '==', 'Active')));
+      const activeDisputesSnap = await getDocs(query(collection(db, 'disputes'), where('status', '==', 'In Progress')));
       // Resolved Disputes
       const resolvedDisputesSnap = await getDocs(query(collection(db, 'disputes'), where('status', '==', 'Resolved')));
       // Pending Tasks
-      const pendingTasksSnap = await getDocs(query(collection(db, 'tasks'), where('status', '==', 'Pending')));
+      const pendingTasksSnapTodo = await getDocs(query(collection(db, 'tasks'), where('status', '==', 'todo')));
+      const pendingTasksSnapInProgress = await getDocs(query(collection(db, 'tasks'), where('status', '==', 'in_progress')));
       // High Priority Tasks
-      const highPriorityTasksSnap = await getDocs(query(collection(db, 'tasks'), where('priority', '==', 'High')));
+      const highPriorityTasksSnap = await getDocs(query(collection(db, 'tasks'), where('priority', 'in', ['high', 'urgent'])));
       // Overdue Tasks
       const now = new Date();
       const tasksSnap = await getDocs(collection(db, 'tasks'));
@@ -47,7 +48,7 @@ export default function DashboardWidgets() {
       setMetrics({
         totalClients: clientsSnap.size,
         activeDisputes: activeDisputesSnap.size,
-        pendingTasks: pendingTasksSnap.size,
+        pendingTasks: pendingTasksSnapTodo.size + pendingTasksSnapInProgress.size,
         successRate,
         activeClients: activeClientsSnap.size,
         resolvedDisputes: resolvedDisputesSnap.size,

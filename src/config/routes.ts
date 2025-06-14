@@ -10,7 +10,7 @@ const ResetPassword = lazy(() => import('../pages/auth/ResetPassword'));
 const Dashboard = lazy(() => import('../pages/dashboard/Dashboard'));
 const Clients = lazy(() => import('../Clients'));
 // const ClientDetails = lazy(() => import('@/pages/clients/ClientDetails')); // Not found, comment out
-const Tasks = lazy(() => import('../Tasks'));
+const Tasks = lazy(() => import('../pages/Tasks'));
 // const TaskDetails = lazy(() => import('@/pages/tasks/TaskDetails')); // Not found, comment out
 const Settings = lazy(() => import('../pages/settings/Settings'));
 const Profile = lazy(() => import('../pages/profile/Profile'));

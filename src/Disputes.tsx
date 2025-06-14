@@ -1,25 +1,27 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Search, Eye, Edit, Trash2, X, AlertCircle, CheckCircle2, Clock, FileWarning, PlusCircle, Filter, ChevronDown, ChevronUp, TrendingUp, FileText, Target, ArrowUpRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useDisputes, type Dispute } from './hooks/useDisputes';
 import toast from 'react-hot-toast';
 
-const emptyDispute = { 
-  id: '',
+type DisputeForm = Omit<Dispute, 'id' | 'createdAt'>;
+type DisputeStatus = Dispute['status'];
+type DisputePriority = Dispute['priority'];
+
+const emptyDispute: DisputeForm = { 
   client: '',
   type: '',
   creditor: '',
   bureau: 'Experian',
   status: 'Draft',
   submitted: '',
-  lastUpdated: new Date().toISOString().split('T')[0],
+  lastUpdated: new Date().toISOString(),
   priority: 'Medium',
   notes: '',
   creditImpact: 0,
   disputeReason: '',
   nextAction: ''
 };
-
-const PAGE_SIZE = 10;
 
 const disputeTemplates = [
   {
@@ -87,14 +89,13 @@ function getStatusIcon(status: string) {
 }
 
 export default function Disputes() {
-  const [loading, setLoading] = useState(true);
-  const [disputes, setDisputes] = useState<any[]>([]);
+  const { disputes, loading, addDispute, updateDispute, deleteDispute, getDisputeStats } = useDisputes();
   const [search, setSearch] = useState('');
-  const [selected, setSelected] = useState<any | null>(null);
+  const [selected, setSelected] = useState<Dispute | null>(null);
   const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState({ ...emptyDispute });
+  const [form, setForm] = useState<DisputeForm>({ ...emptyDispute });
   const [formError, setFormError] = useState('');
-  const [editIndex, setEditIndex] = useState<number | null>(null);
+  const [editId, setEditId] = useState<string | null>(null);
   const [checked, setChecked] = useState<string[]>([]);
   const [page, setPage] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
@@ -106,12 +107,7 @@ export default function Disputes() {
   });
   const [showTemplates, setShowTemplates] = useState(false);
 
-  useEffect(() => {
-    setTimeout(() => {
-      setDisputes([]);
-      setLoading(false);
-    }, 1200);
-  }, []);
+  const stats = getDisputeStats();
 
   const filtered = disputes.filter(d => {
     const matchesSearch = 
@@ -131,13 +127,14 @@ export default function Disputes() {
   });
 
   // Pagination
+  const PAGE_SIZE = 10;
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   // Bulk actions
   const allChecked = paginated.length > 0 && paginated.every(d => checked.includes(d.id));
 
-  function handleAddDispute(e: React.FormEvent) {
+  async function handleAddDispute(e: React.FormEvent) {
     e.preventDefault();
     if (!form.client.trim() || !form.creditor.trim() || !form.type.trim()) {
       setFormError('Client, Creditor, and Type are required.');
@@ -145,33 +142,45 @@ export default function Disputes() {
       return;
     }
     
-    const currentDate = new Date().toISOString().split('T')[0];
-    const disputeData = {
-      ...form,
-      id: form.id || Math.random().toString(36).substr(2, 9),
-      lastUpdated: currentDate,
-      submitted: form.status === 'Draft' ? '' : (form.submitted || currentDate)
-    };
-    
-    if (editIndex !== null) {
-      // Edit
-      setDisputes(disputes => disputes.map((d, i) => i === editIndex ? disputeData : d));
-      toast.success('Dispute updated!');
-    } else {
-      // Add
-      setDisputes([disputeData, ...disputes]);
-      toast.success('Dispute added!');
+    try {
+      if (editId) {
+        await updateDispute(editId, form);
+        toast.success('Dispute updated!');
+      } else {
+        await addDispute(form);
+        toast.success('Dispute added!');
+      }
+      setShowAdd(false);
+      setForm({ ...emptyDispute });
+      setFormError('');
+      setEditId(null);
+    } catch (error) {
+      console.error('Error saving dispute:', error);
+      toast.error('Failed to save dispute');
     }
-    setShowAdd(false);
-    setForm({ ...emptyDispute });
-    setFormError('');
-    setEditIndex(null);
   }
 
-  function handleEdit(dispute: any, idx: number) {
-    setForm(dispute);
-    setEditIndex(idx);
+  function handleEdit(dispute: Dispute) {
+    const { id, createdAt, ...disputeForm } = dispute;
+    setForm(disputeForm);
+    setEditId(id);
     setShowAdd(true);
+  }
+
+  function handleFormChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) {
+    const { name, value } = e.target;
+    setForm(prev => {
+      if (name === 'status') {
+        return { ...prev, [name]: value as DisputeStatus };
+      }
+      if (name === 'priority') {
+        return { ...prev, [name]: value as DisputePriority };
+      }
+      if (name === 'creditImpact') {
+        return { ...prev, [name]: Number(value) };
+      }
+      return { ...prev, [name]: value };
+    });
   }
 
   function handleCheck(id: string, checkedVal: boolean) {
@@ -182,13 +191,18 @@ export default function Disputes() {
     setChecked(checkedVal ? paginated.map(d => d.id) : checked.filter(e => !paginated.map(d => d.id).includes(e)));
   }
 
-  function handleBulkDelete() {
-    setDisputes(disputes => disputes.filter(d => !checked.includes(d.id)));
-    setChecked([]);
-    toast.success('Selected disputes deleted!');
+  async function handleBulkDelete() {
+    try {
+      await Promise.all(checked.map(id => deleteDispute(id)));
+      setChecked([]);
+      toast.success('Selected disputes deleted!');
+    } catch (error) {
+      console.error('Error deleting disputes:', error);
+      toast.error('Failed to delete disputes');
+    }
   }
 
-  const renderTimeline = (dispute: any) => {
+  const renderTimeline = (dispute: Dispute) => {
     const timeline = [
       { date: dispute.submitted, action: 'Dispute Submitted', status: 'completed' },
       { date: new Date(dispute.submitted).getTime() + 7 * 24 * 60 * 60 * 1000, action: 'Bureau Acknowledgment', status: 'completed' },
@@ -237,18 +251,11 @@ export default function Disputes() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Active Disputes</p>
-                <h3 className="text-2xl font-bold mt-1">{disputes.filter(d => d.status === 'In Progress').length}</h3>
+                <h3 className="text-2xl font-bold mt-1">{stats.activeDisputes}</h3>
               </div>
               <div className="p-3 bg-blue-50 rounded-lg">
                 <FileText size={24} />
               </div>
-            </div>
-            <div className="flex items-center gap-2 mt-4">
-              <span className="text-sm text-green-600 flex items-center gap-1">
-                <ArrowUpRight size={16} />
-                12%
-              </span>
-              <span className="text-sm text-gray-600">vs last month</span>
             </div>
           </div>
 
@@ -256,56 +263,35 @@ export default function Disputes() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Success Rate</p>
-                <h3 className="text-2xl font-bold mt-1">78%</h3>
+                <h3 className="text-2xl font-bold mt-1">{stats.successRate}%</h3>
               </div>
               <div className="p-3 bg-green-50 rounded-lg">
                 <TrendingUp size={24} />
               </div>
             </div>
-            <div className="flex items-center gap-2 mt-4">
-              <span className="text-sm text-green-600 flex items-center gap-1">
-                <ArrowUpRight size={16} />
-                5%
-              </span>
-              <span className="text-sm text-gray-600">vs last month</span>
-            </div>
           </div>
 
           <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Avg. Resolution Time</p>
-                <h3 className="text-2xl font-bold mt-1">32 days</h3>
+                <p className="text-sm text-gray-600">Total Disputes</p>
+                <h3 className="text-2xl font-bold mt-1">{stats.totalDisputes}</h3>
               </div>
               <div className="p-3 bg-purple-50 rounded-lg">
-                <Clock size={24} />
+                <FileText size={24} />
               </div>
-            </div>
-            <div className="flex items-center gap-2 mt-4">
-              <span className="text-sm text-red-600 flex items-center gap-1">
-                <ArrowUpRight size={16} />
-                3 days
-              </span>
-              <span className="text-sm text-gray-600">vs last month</span>
             </div>
           </div>
 
           <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Credit Score Impact</p>
-                <h3 className="text-2xl font-bold mt-1">+45 pts</h3>
+                <p className="text-sm text-gray-600">Resolved Disputes</p>
+                <h3 className="text-2xl font-bold mt-1">{stats.resolvedDisputes}</h3>
               </div>
-              <div className="p-3 bg-orange-50 rounded-lg">
-                <Target size={24} />
+              <div className="p-3 bg-green-50 rounded-lg">
+                <CheckCircle2 size={24} />
               </div>
-            </div>
-            <div className="flex items-center gap-2 mt-4">
-              <span className="text-sm text-green-600 flex items-center gap-1">
-                <ArrowUpRight size={16} />
-                8 pts
-              </span>
-              <span className="text-sm text-gray-600">vs last month</span>
             </div>
           </div>
         </div>
@@ -468,7 +454,7 @@ export default function Disputes() {
                   </td>
                 </tr>
               ) : (
-                paginated.map((dispute, idx) => (
+                paginated.map((dispute) => (
                   <tr key={dispute.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4">
                       <input
@@ -485,7 +471,6 @@ export default function Disputes() {
                         </div>
                         <div className="ml-3">
                           <div className="font-medium text-gray-900">{dispute.client}</div>
-                          <div className="text-sm text-gray-500">ID: {dispute.id}</div>
                         </div>
                       </div>
                     </td>
@@ -527,16 +512,13 @@ export default function Disputes() {
                           <Eye size={20} />
                         </button>
                         <button
-                          onClick={() => handleEdit(dispute, idx)}
+                          onClick={() => handleEdit(dispute)}
                           className="p-1 text-gray-400 hover:text-gray-600"
                         >
                           <Edit size={20} />
                         </button>
                         <button
-                          onClick={() => {
-                            setDisputes(disputes.filter(d => d.id !== dispute.id));
-                            toast.success('Dispute deleted!');
-                          }}
+                          onClick={() => deleteDispute(dispute.id)}
                           className="p-1 text-gray-400 hover:text-red-600"
                         >
                           <Trash2 size={20} />
@@ -595,7 +577,6 @@ export default function Disputes() {
                 <div className="flex justify-between items-start mb-6">
                   <div>
                     <h2 className="text-xl font-bold text-gray-900">Dispute Details</h2>
-                    <p className="text-gray-600 mt-1">ID: {selected.id}</p>
                   </div>
                   <button
                     onClick={() => setSelected(null)}
@@ -688,10 +669,10 @@ export default function Disputes() {
                 <div className="flex justify-between items-start mb-6">
                   <div>
                     <h2 className="text-xl font-bold text-gray-900">
-                      {editIndex !== null ? 'Edit Dispute' : 'New Dispute'}
+                      {editId !== null ? 'Edit Dispute' : 'New Dispute'}
                     </h2>
                     <p className="text-gray-600 mt-1">
-                      {editIndex !== null ? 'Update dispute details' : 'Create a new dispute case'}
+                      {editId !== null ? 'Update dispute details' : 'Create a new dispute case'}
                     </p>
                   </div>
                   <button
@@ -700,7 +681,7 @@ export default function Disputes() {
                       setShowAdd(false);
                       setForm({ ...emptyDispute });
                       setFormError('');
-                      setEditIndex(null);
+                      setEditId(null);
                     }}
                     className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                   >
@@ -767,7 +748,7 @@ export default function Disputes() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
                     <select
                       value={form.status}
-                      onChange={(e) => setForm(f => ({ ...f, status: e.target.value }))}
+                      onChange={(e) => setForm(f => ({ ...f, status: e.target.value as DisputeStatus }))}
                       className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
                       <option value="Draft">Draft</option>
@@ -781,7 +762,7 @@ export default function Disputes() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
                     <select
                       value={form.priority}
-                      onChange={(e) => setForm(f => ({ ...f, priority: e.target.value }))}
+                      onChange={(e) => setForm(f => ({ ...f, priority: e.target.value as DisputePriority }))}
                       className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
                       <option value="High">High</option>
@@ -820,7 +801,7 @@ export default function Disputes() {
                       setShowAdd(false);
                       setForm({ ...emptyDispute });
                       setFormError('');
-                      setEditIndex(null);
+                      setEditId(null);
                     }}
                     className="px-4 py-2 text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                   >
@@ -830,7 +811,7 @@ export default function Disputes() {
                     type="submit"
                     className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                   >
-                    {editIndex !== null ? 'Update Dispute' : 'Create Dispute'}
+                    {editId !== null ? 'Update Dispute' : 'Create Dispute'}
                   </button>
                 </div>
               </form>

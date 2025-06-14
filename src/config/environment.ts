@@ -10,7 +10,7 @@ interface EnvironmentConfig {
 }
 
 const developmentConfig: EnvironmentConfig = {
-  apiUrl: 'http://localhost:3000/api',
+  apiUrl: 'http://localhost:3000',
   cdnUrl: 'http://localhost:3000/static',
   environment: 'development',
   enableMonitoring: true,

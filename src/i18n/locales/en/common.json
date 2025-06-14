@@ -85,5 +85,10 @@
     "number": "{{number, number}}",
     "currency": "{{amount, currency}}",
     "percentage": "{{value, percentage}}"
+  },
+  "quickActions": {
+    "newClient": "New Client",
+    "newTask": "New Task",
+    "viewReports": "View Reports"
   }
 } 

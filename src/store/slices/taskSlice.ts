@@ -21,9 +21,13 @@ const initialState: TaskState = {
 export const fetchTasks = createAsyncThunk<Task[], TaskFilter>(
   'tasks/fetchTasks',
   async (filters) => {
-    const response = await api.get<Task[]>(API_ENDPOINTS.TASKS.LIST, {
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(filters)
+    // Build query string from filters (if any)
+    const query = filters && Object.keys(filters).length > 0
+      ? '?' + new URLSearchParams(filters as any).toString()
+      : '';
+    const response = await api.get<Task[]>(API_ENDPOINTS.TASKS.LIST + query, {
+      headers: { 'Content-Type': 'application/json' }
+      // No body for GET requests!
     });
     return response.data;
   }

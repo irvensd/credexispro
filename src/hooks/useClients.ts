@@ -1,113 +1,93 @@
-import { useDispatch, useSelector } from 'react-redux';
-import type { RootState } from '../store';
-import {
-  setClients,
-  addClient,
-  updateClient,
-  deleteClient,
-  setSelectedClient,
-  setLoading,
-  setError
-} from '../store/slices/clientsSlice';
+import { useEffect, useState, useCallback } from 'react';
+import { collection, query, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, orderBy } from 'firebase/firestore';
+import { db } from '../firebase';
+import type { Client } from '../types/store';
 
 export const useClients = () => {
-  const dispatch = useDispatch();
-  const clients = useSelector((state: RootState) => state.clients);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const fetchClients = async () => {
-    try {
-      dispatch(setLoading(true));
-      // TODO: Replace with actual API call
-      const response = await fetch('/api/clients');
-      if (!response.ok) {
-        throw new Error('Failed to fetch clients');
+  // Real-time fetch
+  useEffect(() => {
+    setLoading(true);
+    const q = query(collection(db, 'clients'), orderBy('createdAt', 'desc'));
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        setClients(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Client)));
+        setLoading(false);
+      },
+      (err) => {
+        setError(err.message);
+        setLoading(false);
       }
-      const data = await response.json();
-      dispatch(setClients(data));
-    } catch (error) {
-      dispatch(setError(error instanceof Error ? error.message : 'Failed to fetch clients'));
-    } finally {
-      dispatch(setLoading(false));
-    }
-  };
+    );
+    return () => unsubscribe();
+  }, []);
 
-  const createClient = async (clientData: Omit<RootState['clients']['clients'][0], 'id' | 'createdAt' | 'updatedAt'>) => {
+  // Add a new client
+  const createClient = useCallback(async (client: Partial<Client>) => {
+    setLoading(true);
+    setError(null);
     try {
-      dispatch(setLoading(true));
-      // TODO: Replace with actual API call
-      const response = await fetch('/api/clients', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(clientData),
+      // Remove undefined fields
+      const cleanClient: Record<string, any> = {};
+      Object.entries(client).forEach(([key, value]) => {
+        if (value !== undefined) cleanClient[key] = value;
       });
-      if (!response.ok) {
-        throw new Error('Failed to create client');
-      }
-      const data = await response.json();
-      dispatch(addClient(data));
-    } catch (error) {
-      dispatch(setError(error instanceof Error ? error.message : 'Failed to create client'));
-    } finally {
-      dispatch(setLoading(false));
-    }
-  };
-
-  const updateClientData = async (id: string, clientData: Partial<RootState['clients']['clients'][0]>) => {
-    try {
-      dispatch(setLoading(true));
-      // TODO: Replace with actual API call
-      const response = await fetch(`/api/clients/${id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(clientData),
+      await addDoc(collection(db, 'clients'), {
+        ...cleanClient,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
       });
-      if (!response.ok) {
-        throw new Error('Failed to update client');
-      }
-      const data = await response.json();
-      dispatch(updateClient(data));
-    } catch (error) {
-      dispatch(setError(error instanceof Error ? error.message : 'Failed to update client'));
+    } catch (err: any) {
+      setError(err.message);
     } finally {
-      dispatch(setLoading(false));
+      setLoading(false);
     }
-  };
+  }, []);
 
-  const removeClient = async (id: string) => {
+  // Update a client
+  const updateClient = useCallback(async (id: string, client: Partial<Client>) => {
+    setLoading(true);
+    setError(null);
     try {
-      dispatch(setLoading(true));
-      // TODO: Replace with actual API call
-      const response = await fetch(`/api/clients/${id}`, {
-        method: 'DELETE',
+      // Remove undefined fields
+      const cleanClient: Record<string, any> = {};
+      Object.entries(client).forEach(([key, value]) => {
+        if (value !== undefined) cleanClient[key] = value;
       });
-      if (!response.ok) {
-        throw new Error('Failed to delete client');
-      }
-      dispatch(deleteClient(id));
-    } catch (error) {
-      dispatch(setError(error instanceof Error ? error.message : 'Failed to delete client'));
+      await updateDoc(doc(db, 'clients', id), {
+        ...cleanClient,
+        updatedAt: serverTimestamp(),
+      });
+    } catch (err: any) {
+      setError(err.message);
     } finally {
-      dispatch(setLoading(false));
+      setLoading(false);
     }
-  };
+  }, []);
 
-  const selectClient = (client: RootState['clients']['clients'][0] | null) => {
-    dispatch(setSelectedClient(client));
-  };
+  // Delete a client
+  const deleteClient = useCallback(async (id: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      await deleteDoc(doc(db, 'clients', id));
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   return {
-    clients: clients.clients,
-    selectedClient: clients.selectedClient,
-    loading: clients.loading,
-    error: clients.error,
-    fetchClients,
+    clients,
+    loading,
+    error,
     createClient,
-    updateClient: updateClientData,
-    deleteClient: removeClient,
-    selectClient,
+    updateClient,
+    deleteClient,
   };
 }; 

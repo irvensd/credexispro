@@ -14,7 +14,7 @@ import DashboardContent from './DashboardContent';
 import WhyCredexis from './WhyCredexis';
 import Clients from './Clients';
 import Disputes from './Disputes';
-import Tasks from './Tasks';
+import Tasks from './pages/Tasks';
 import Payments from './Payments';
 import Documents from './Documents';
 import LetterTemplates from './LetterTemplates';
@@ -71,13 +71,27 @@ const DashboardLayout = ({ children, userData }: { children: React.ReactNode, us
 // Protected route component
 const ProtectedRoute = ({ children, userData }: { children: React.ReactNode, userData?: any }) => {
   const { isAuthenticated, loading } = useSelector((state: RootState) => state.auth);
-  const [showWelcome, setShowWelcome] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(() => {
+    return !localStorage.getItem('welcomeModalShown');
+  });
 
   useEffect(() => {
-    if (userData && !userData.hasSeenWelcome) {
+    if (userData && !userData.hasSeenWelcome && !localStorage.getItem('welcomeModalShown')) {
       setShowWelcome(true);
     }
   }, [userData]);
+
+  const handleWelcomeComplete = async () => {
+    setShowWelcome(false);
+    localStorage.setItem('welcomeModalShown', 'true');
+    if (userData) {
+      try {
+        await updateDoc(doc(db, 'users', userData.id), { hasSeenWelcome: true });
+      } catch (error) {
+        console.error('Error updating welcome status:', error);
+      }
+    }
+  };
 
   if (loading) {
     return <LoadingSpinner />;
@@ -91,19 +105,8 @@ const ProtectedRoute = ({ children, userData }: { children: React.ReactNode, use
     <DashboardLayout userData={userData}>
       <WelcomeTutorial 
         isOpen={showWelcome} 
-        onClose={() => setShowWelcome(false)} 
-        onComplete={async () => {
-          setShowWelcome(false);
-          if (userData) {
-            try {
-              await updateDoc(doc(db, 'users', userData.id), {
-                hasSeenWelcome: true
-              });
-            } catch (error) {
-              console.error('Error updating welcome status:', error);
-            }
-          }
-        }} 
+        onClose={handleWelcomeComplete} 
+        onComplete={handleWelcomeComplete} 
       />
       {children}
     </DashboardLayout>
